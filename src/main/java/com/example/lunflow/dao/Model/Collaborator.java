@@ -3,6 +3,7 @@ package com.example.lunflow.dao.Model;
 
 import lombok.Data;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
@@ -17,4 +18,5 @@ public class Collaborator {
     private String userId;
     private boolean isAdmin;
     private String idPicture;
+
 }

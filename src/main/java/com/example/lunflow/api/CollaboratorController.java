@@ -1,5 +1,6 @@
 package com.example.lunflow.api;
 
+import com.example.lunflow.Service.CollaboratorService;
 import com.example.lunflow.dao.Model.Collaborator;
 import com.example.lunflow.Service.Impl.CollaboratorServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,11 @@ import java.util.List;
 @RequestMapping("/api/collaborators")
 public class CollaboratorController {
     @Autowired
-    private CollaboratorServiceImpl collaboratorService;
+    private final CollaboratorService collaboratorService;
+
+    public CollaboratorController(CollaboratorService collaboratorService) {
+        this.collaboratorService = collaboratorService;
+    }
 
     @GetMapping
     public List<Collaborator> getAllCollaborators() {

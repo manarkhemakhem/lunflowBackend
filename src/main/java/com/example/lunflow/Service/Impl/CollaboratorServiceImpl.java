@@ -11,8 +11,12 @@ import java.util.List;
 @Service
 
 public class CollaboratorServiceImpl  implements CollaboratorService {
+    private final CollaboratorDao collaboratorDao;
     @Autowired
-    private CollaboratorDao collaboratorDao;
+
+    public CollaboratorServiceImpl(CollaboratorDao collaboratorDao) {
+        this.collaboratorDao = collaboratorDao;
+    }
 
 
     public List<Collaborator> getAllCollaborators() {
