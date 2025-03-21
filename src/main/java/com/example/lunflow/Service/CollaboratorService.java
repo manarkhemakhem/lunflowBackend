@@ -14,5 +14,4 @@ public interface CollaboratorService {
     List<Collaborator> getCollaboratorIsAdminFalse();
 
 
-    void deleteCollaborator(String id);
 }
