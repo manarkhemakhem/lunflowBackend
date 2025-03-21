@@ -7,6 +7,7 @@ import com.example.lunflow.dao.Model.Collaborator;
 import com.example.lunflow.dao.Model.Group;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -35,19 +36,18 @@ public class GroupController {
         return groupService.getGroupById(id);
     }
 
-    //Endpoint pour obtenir les collaborateurs d'un groupe par une liste d'IDs de collaborateurs
     @GetMapping("/{groupId}/collaborators")
-    public List<Collaborator> getCollaboratorList(@PathVariable String groupId) {
-        // Récupérer le groupe à partir de son ID
-        Group group = groupService.getGroupById(groupId);
+    public ResponseEntity<List<Collaborator>> getCollaboratorList(@PathVariable String groupId) {
+        // Étape 1 : Récupérer les IDs des collaborateurs du groupe
+        List<String> collabIds = groupService.getCollaboratorList(groupId);
 
-        if (group == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Group not found");
+        if (collabIds != null && !collabIds.isEmpty()) {
+            // Étape 2 : Récupérer les détails des collaborateurs en fonction des IDs
+            List<Collaborator> collaborators = groupService.getCollaboratorDetails(collabIds);
+            return ResponseEntity.ok(collaborators);
         }
 
-        // Récupérer les collaborateurs à partir de la liste des IDs dans le groupe
-        List<String> collabIdList = group.getCollabIdList(); // Liste des IDs des collaborateurs du groupe
-        return groupService.getCollaboratorList(collabIdList);  // Retourner les collaborateurs
+        return ResponseEntity.notFound().build();
     }
 }
 

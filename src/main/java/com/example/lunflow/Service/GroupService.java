@@ -9,6 +9,7 @@ public interface GroupService {
 
     List<Group> getAllGroups();
     Group getGroupById(String id);
-    List<Collaborator> getCollaboratorList(List<String> collaboratorIds);
+    List<String>  getCollaboratorList(String groupId);
+    List<Collaborator>  getCollaboratorDetails(List<String> collabIds);
 
 }
