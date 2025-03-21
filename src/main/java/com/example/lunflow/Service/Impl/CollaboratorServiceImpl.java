@@ -43,13 +43,20 @@ public class CollaboratorServiceImpl  implements CollaboratorService {
         return mongoTemplate.find(query, Collaborator.class);
     }
 
-
     public List<Collaborator> getCollaboratorIsAdminFalse() {
         // Création d'une Query avec un critère où isAdmin est false ou non défini
         Query query = new Query();
-        query.addCriteria(Criteria.where("isAdmin").is(false).orOperator(Criteria.where("isAdmin").exists(false)));
-        return mongoTemplate.find(query, Collaborator.class);
 
+        // Utilisation de orOperator pour combiner les critères
+        query.addCriteria(new Criteria().orOperator(
+                Criteria.where("isAdmin").is(false),  // Cherche où isAdmin est false
+                Criteria.where("isAdmin").exists(false)  // Cherche où isAdmin n'existe pas
+        ));
+
+        // Exécution de la requête et récupération des résultats
+        return mongoTemplate.find(query, Collaborator.class);
     }
+
+
 
 }
