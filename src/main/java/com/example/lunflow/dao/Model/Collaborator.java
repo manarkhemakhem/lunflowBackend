@@ -2,6 +2,7 @@ package com.example.lunflow.dao.Model;
 
 
 import lombok.Data;
+import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -10,7 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document(collection = "collaborator")
 public class Collaborator {
     @Id
-    private String id;
+    private ObjectId id;
     private String fullname;
     private String title;
     private String email;
@@ -18,5 +19,7 @@ public class Collaborator {
     private String userId;
     private boolean isAdmin;
     private String idPicture;
-
+    public ObjectId getId() {
+        return id;
+    }
 }

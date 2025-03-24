@@ -6,7 +6,9 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @CrossOrigin(origins = "*")// Pour Angular
 @RestController
@@ -28,7 +30,10 @@ public class CollaboratorController {
     public Collaborator getCollaboratorById(@PathVariable String id) {
         return collaboratorService.getCollaboratorById(id);
     }
-
+    @GetMapping("/histogram")
+    public Map<LocalDate, Long> getHistogram() {
+        return collaboratorService.getCreationDatesHistogram();
+    }
 
 
 
