@@ -18,8 +18,11 @@ public class Collaborator {
     private String groupId;
     private String userId;
     private boolean isAdmin;
-    private String idPicture;
+    private String idPicture;private Boolean deleted;
     public ObjectId getId() {
         return id;
+    }
+    public Boolean getDeleted() {
+        return deleted;
     }
 }

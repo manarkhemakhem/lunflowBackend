@@ -4,6 +4,7 @@ import com.example.lunflow.Service.CollaboratorService;
 import com.example.lunflow.dao.Model.Collaborator;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -50,5 +51,10 @@ public class CollaboratorController {
     @GetMapping("/group/{groupId}")
     public List<Collaborator> findByGroupId (@PathVariable String groupId) {
         return collaboratorService.getCollaboratorByGroupId(groupId);
+    }
+    @GetMapping("/{id}/deleted")
+    public ResponseEntity<Boolean> getDeletedStatus(@PathVariable String id) {
+        Boolean deletedStatus = collaboratorService.getCollaboratorDeletedStatus(id);
+        return ResponseEntity.ok(deletedStatus);
     }
 }

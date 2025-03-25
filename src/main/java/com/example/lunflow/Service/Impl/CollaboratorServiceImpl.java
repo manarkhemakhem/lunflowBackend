@@ -58,6 +58,19 @@ public class CollaboratorServiceImpl  implements CollaboratorService {
     }
 
     @Override
+    public Boolean getCollaboratorDeletedStatus(String collaboratorId) {
+        Collaborator collaborator = collaboratorDao.findById(collaboratorId);
+
+        // Si le collaborateur n'existe pas, retourner null (ou false selon ce que tu préfères)
+        if (collaborator == null) {
+            return null; // Ou tu peux retourner false si tu préfères indiquer que le collaborateur n'est pas supprimé.
+        }
+
+        // Si l'attribut 'deleted' n'existe pas ou est null, considérer que le collaborateur est deleted
+        return (collaborator.getDeleted() != null) ? collaborator.getDeleted() : true;
+    }
+
+    @Override
     public Collaborator getCollaboratorById(String id) {
         return collaboratorDao.findById(id);
     }
