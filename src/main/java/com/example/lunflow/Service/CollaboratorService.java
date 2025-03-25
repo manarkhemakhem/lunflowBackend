@@ -12,7 +12,7 @@ public interface CollaboratorService {
     List<Collaborator> getAllCollaborators();
      Boolean getCollaboratorDeletedStatus(String collaboratorId);
 
-
+    Boolean getCollaboratorOnlineStatus(String collaboratorId);
     Collaborator getCollaboratorById(String id);
     List<Collaborator>getCollaboratorByGroupId(String groupId);
     List<Collaborator> getCollaboratorIsAdmin();

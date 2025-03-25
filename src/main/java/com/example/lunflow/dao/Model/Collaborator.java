@@ -19,10 +19,13 @@ public class Collaborator {
     private String userId;
     private boolean isAdmin;
     private String idPicture;private Boolean deleted;
+    private Boolean OnLine;
     public ObjectId getId() {
         return id;
     }
     public Boolean getDeleted() {
         return deleted;
+    }public Boolean getOnLine() {
+        return OnLine;
     }
 }

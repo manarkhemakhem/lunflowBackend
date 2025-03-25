@@ -57,4 +57,8 @@ public class CollaboratorController {
         Boolean deletedStatus = collaboratorService.getCollaboratorDeletedStatus(id);
         return ResponseEntity.ok(deletedStatus);
     }
+    @GetMapping("/{id}/online-status")
+    public Boolean getCollaboratorOnlineStatus(@PathVariable String id) {
+        return collaboratorService.getCollaboratorOnlineStatus(id);
+    }
 }

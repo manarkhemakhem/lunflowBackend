@@ -102,5 +102,13 @@ public class CollaboratorServiceImpl  implements CollaboratorService {
     }
 
 
-
+    @Override
+    public Boolean getCollaboratorOnlineStatus(String collaboratorId) {
+        Collaborator collaborator = collaboratorDao.findById(collaboratorId);
+        if (collaborator != null) {
+            // Si l'attribut 'online' n'existe pas, considérer comme false
+            return collaborator.getOnLine() != null ? collaborator.getOnLine() : false;
+        }
+        return false; // Collaborator not found, consider as offline
+    }
 }
