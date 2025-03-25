@@ -31,7 +31,7 @@ public class CollaboratorController {
         return collaboratorService.getCollaboratorById(id);
     }
     @GetMapping("/histogram")
-    public Map<LocalDate, Long> getHistogram() {
+    public Map<String, Long> getHistogram() {
         return collaboratorService.getCreationDatesHistogram();
     }
 

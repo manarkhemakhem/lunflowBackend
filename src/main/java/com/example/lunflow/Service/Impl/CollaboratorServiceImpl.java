@@ -16,6 +16,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,16 +26,28 @@ public class CollaboratorServiceImpl  implements CollaboratorService {
     @Autowired
     private MongoTemplate mongoTemplate;
     @Override
-    public Map<LocalDate, Long> getCreationDatesHistogram() {
+    public Map<String, Long> getCreationDatesHistogram() {
         List<Collaborator> collaborators = collaboratorDao.findAll();
 
         return collaborators.stream()
-                .map(Collaborator::getId) // Récupérer l'ID de chaque collaborateur
-                .filter(id -> id != null) // Vérifier qu'il n'est pas null
-                .map(id -> (id instanceof ObjectId) ? ((ObjectId) id).getTimestamp() : new ObjectId(id.toString()).getTimestamp()) // Gérer ObjectId
-                .map(timestamp -> Instant.ofEpochSecond(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()) // Conversion timestamp -> LocalDate
-                .collect(Collectors.groupingBy(date -> date, Collectors.counting())); // Grouper par date
+                .map(Collaborator::getId)
+                .filter(Objects::nonNull) // Vérification simplifiée
+                .map(id -> {
+                    if (id instanceof ObjectId) {
+                        return ((ObjectId) id).getTimestamp();
+                    } else {
+                        return new ObjectId(id.toString()).getTimestamp();
+                    }
+                })
+                .map(timestamp -> Instant.ofEpochSecond(timestamp).atZone(ZoneId.systemDefault()).toLocalDate())
+                .map(date -> {
+                    int year = date.getYear();
+                    int quarter = (date.getMonthValue() - 1) / 3 + 1; // Convertir mois en trimestre
+                    return year + "-T" + quarter; // Format "2025-T1"
+                })
+                .collect(Collectors.groupingBy(q -> q, Collectors.counting()));
     }
+
     public CollaboratorServiceImpl(CollaboratorDao collaboratorDao) {
         this.collaboratorDao = collaboratorDao;
     }

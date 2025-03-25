@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface CollaboratorService {
-    Map<LocalDate, Long>getCreationDatesHistogram();
+    Map<String, Long>getCreationDatesHistogram();
     List<Collaborator> getAllCollaborators();
 
     Collaborator getCollaboratorById(String id);
