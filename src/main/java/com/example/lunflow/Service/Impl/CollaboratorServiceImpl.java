@@ -57,18 +57,6 @@ public class CollaboratorServiceImpl  implements CollaboratorService {
         return collaboratorDao.findAll();
     }
 
-    @Override
-    public Boolean getCollaboratorDeletedStatus(String collaboratorId) {
-        Collaborator collaborator = collaboratorDao.findById(collaboratorId);
-
-        // Si le collaborateur n'existe pas, retourner null (ou false selon ce que tu préfères)
-        if (collaborator == null) {
-            return null; // Ou tu peux retourner false si tu préfères indiquer que le collaborateur n'est pas supprimé.
-        }
-
-        // Si l'attribut 'deleted' n'existe pas ou est null, considérer que le collaborateur est deleted
-        return (collaborator.getDeleted() != null) ? collaborator.getDeleted() : true;
-    }
 
     @Override
     public Collaborator getCollaboratorById(String id) {
@@ -115,12 +103,23 @@ public class CollaboratorServiceImpl  implements CollaboratorService {
 
 
     @Override
-    public Boolean getCollaboratorOnlineStatus(String collaboratorId) {
+    public Boolean getCollaboratoronlineStatus(String collaboratorId) {
         Collaborator collaborator = collaboratorDao.findById(collaboratorId);
         if (collaborator != null) {
             // Si l'attribut 'online' n'existe pas, considérer comme false
-            return collaborator.getOnLine() != null ? collaborator.getOnLine() : false;
+            return collaborator.getonLine() != null ? collaborator.getonLine() : false;
         }
-        return false; // Collaborator not found, consider as offline
+        return false;
     }
+    @Override
+    public Boolean getCollaboratorDeletedStatus(String collaboratorId) {
+        Collaborator collaborator = collaboratorDao.findById(collaboratorId);
+
+        if (collaborator == null) {
+            return null;
+        }
+
+        return (collaborator.getDeleted() != null) ? collaborator.getDeleted() : true;
+    }
+
 }

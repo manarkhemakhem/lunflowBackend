@@ -59,7 +59,7 @@ public class CollaboratorController {
     }
     @GetMapping("/{id}/online-status")
     public ResponseEntity <Boolean> getCollaboratorOnlineStatus(@PathVariable String id) {
-        Boolean onLineStatus = collaboratorService.getCollaboratorOnlineStatus(id);
+        Boolean onLineStatus = collaboratorService.getCollaboratoronlineStatus(id);
         return ResponseEntity.ok(onLineStatus);
     }
     @GetMapping("/search")
