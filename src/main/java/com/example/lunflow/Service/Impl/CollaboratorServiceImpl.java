@@ -105,11 +105,10 @@ public class CollaboratorServiceImpl  implements CollaboratorService {
     @Override
     public Boolean getCollaboratoronlineStatus(String collaboratorId) {
         Collaborator collaborator = collaboratorDao.findById(collaboratorId);
-        if (collaborator != null) {
-            // Si l'attribut 'online' n'existe pas, considérer comme false
-            return collaborator.getonLine() != null ? collaborator.getonLine() : false;
-        }
-        return false;
+
+        // Si l'attribut 'onLine' est null ou inexistant, retourner false
+        return collaborator.getonLine() != null ? collaborator.getonLine() : false;
+
     }
     @Override
     public Boolean getCollaboratorDeletedStatus(String collaboratorId) {
