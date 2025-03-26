@@ -58,8 +58,9 @@ public class CollaboratorController {
         return ResponseEntity.ok(deletedStatus);
     }
     @GetMapping("/{id}/online-status")
-    public Boolean getCollaboratorOnlineStatus(@PathVariable String id) {
-        return collaboratorService.getCollaboratorOnlineStatus(id);
+    public ResponseEntity <Boolean> getCollaboratorOnlineStatus(@PathVariable String id) {
+        Boolean onLineStatus = collaboratorService.getCollaboratorOnlineStatus(id);
+        return ResponseEntity.ok(onLineStatus);
     }
     @GetMapping("/search")
     public List<Collaborator> search(@RequestParam String fullname) {
