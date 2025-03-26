@@ -11,6 +11,7 @@ public interface CollaboratorRepo extends MongoRepository<Collaborator, String> 
     List<Collaborator> findByIsAdmin(boolean isAdmin);
     List<Collaborator> findByIsAdminFalse(boolean isAdmin);
 
+    List<Collaborator> findByFullnameRegexIgnoreCase(String fullname) ;
 
 
 }

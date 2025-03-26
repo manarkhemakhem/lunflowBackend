@@ -61,4 +61,9 @@ public class CollaboratorController {
     public Boolean getCollaboratorOnlineStatus(@PathVariable String id) {
         return collaboratorService.getCollaboratorOnlineStatus(id);
     }
+    @GetMapping("/search")
+    public List<Collaborator> search(@RequestParam String fullname) {
+        // Appel au service qui interroge le repository
+        return collaboratorService.searchByFullnameRegexIgnoreCase(fullname);
+    }
 }

@@ -20,6 +20,12 @@ public class Collaborator {
     private boolean isAdmin;
     private String idPicture;private Boolean deleted;
     private Boolean OnLine;
+    public Collaborator() {}
+    public Collaborator(String nom, String prenom) {
+        this.fullname = fullname;
+    }
+
+    public String getfullname() { return fullname; }
     public ObjectId getId() {
         return id;
     }

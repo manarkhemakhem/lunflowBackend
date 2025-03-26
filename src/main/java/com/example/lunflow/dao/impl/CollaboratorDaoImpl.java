@@ -41,6 +41,13 @@ public class CollaboratorDaoImpl implements CollaboratorDao {
     }
 
     @Override
+    public List<Collaborator> searchByFullnameRegexIgnoreCase(String fullname) {
+                 return collaboratorRepo.findByFullnameRegexIgnoreCase(".*" + fullname + ".*");
+
+    }
+
+
+    @Override
     public void deleteById(String id) {
     collaboratorRepo.deleteById(id);
 

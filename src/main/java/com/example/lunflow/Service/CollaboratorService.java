@@ -18,5 +18,6 @@ public interface CollaboratorService {
     List<Collaborator> getCollaboratorIsAdmin();
     List<Collaborator> getCollaboratorIsAdminFalse();
 
+    List<Collaborator> searchByFullnameRegexIgnoreCase(String fullname);
 
 }
