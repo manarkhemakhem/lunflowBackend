@@ -91,12 +91,9 @@ public class CollaboratorServiceImpl  implements CollaboratorService {
 
     @Override
     public List<Collaborator> searchByFullnameRegexIgnoreCase(String fullname) {
-        // Vérifie que fullname n'est ni null ni vide
         if (fullname == null || fullname.trim().isEmpty()) {
             throw new IllegalArgumentException("Le nom ne peut pas être vide ou null");
         }
-
-        // Appel au DAO pour effectuer la recherche avec regex
         return collaboratorDao.searchByFullnameRegexIgnoreCase(fullname.trim());
     }
 
