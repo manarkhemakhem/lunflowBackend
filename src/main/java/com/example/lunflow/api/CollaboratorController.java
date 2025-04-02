@@ -43,6 +43,14 @@ public class CollaboratorController {
         return collaboratorService.getCollaboratorIsAdmin();
     }
 
+    @GetMapping("/onLine")
+    public List<Collaborator> getAllOnLine() {
+        return collaboratorService.getCollaboratoronline();
+    }
+    @GetMapping("/offLine")
+    public List<Collaborator> getAllOffLine() {
+        return collaboratorService.getCollaboratoroffline();
+    }
     @GetMapping("/NotAdmin")
     public List<Collaborator> getAllNotAdmin() {
         return collaboratorService.getCollaboratorIsAdminFalse();
@@ -57,14 +65,10 @@ public class CollaboratorController {
         Boolean deletedStatus = collaboratorService.getCollaboratorDeletedStatus(id);
         return ResponseEntity.ok(deletedStatus);
     }
-    @GetMapping("/{id}/online-status")
-    public ResponseEntity <Boolean> getCollaboratorOnlineStatus(@PathVariable String id) {
-        Boolean onLineStatus = collaboratorService.getCollaboratoronlineStatus(id);
-        return ResponseEntity.ok(onLineStatus);
-    }
-    @GetMapping("/search")
-    public List<Collaborator> search(@RequestParam String fullname) {
-        // Appel au service qui interroge le repository
-        return collaboratorService.searchByFullnameRegexIgnoreCase(fullname);
-    }
-}
+
+
+
+@GetMapping("/search")
+public List<Collaborator> search(@RequestParam String fullname) {
+    // Appel au service qui interroge le repository
+    return collaboratorService.searchByFullnameRegexIgnoreCase(fullname);}}
