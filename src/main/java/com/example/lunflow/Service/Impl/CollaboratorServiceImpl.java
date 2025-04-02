@@ -67,6 +67,7 @@ public class CollaboratorServiceImpl  implements CollaboratorService {
     public List<Collaborator> getCollaboratorByGroupId(String groupId) {
         return collaboratorDao.findByGroupId(groupId);
     }
+
     @Override
     public List<Collaborator> getCollaboratorIsAdmin() {
         // Création d'une Query avec un critère où isAdmin est true
@@ -90,6 +91,39 @@ public class CollaboratorServiceImpl  implements CollaboratorService {
     }
 
     @Override
+    public List<Collaborator> getCollaboratoronline() {
+        // Création d'une Query avec un critère où onLine est true
+        Query query = new Query();
+        query.addCriteria(Criteria.where("onLine").is(true));
+
+        // Exécution de la requête et récupération des résultats
+        return mongoTemplate.find(query, Collaborator.class);
+    }
+    @Override
+    public List<Collaborator> getCollaboratoroffline() {
+        // Création d'une Query avec un critère où onLine est false ou non défini
+        Query query = new Query();
+
+        // Utilisation de orOperator pour combiner les critères
+        query.addCriteria(new Criteria().orOperator(
+                Criteria.where("onLine").is(false),  // Cherche où onLine est false
+                Criteria.where("onLine").exists(false)  // Cherche où onLine n'existe pas
+        ));
+
+        // Exécution de la requête et récupération des résultats
+        return mongoTemplate.find(query, Collaborator.class);
+    }
+    @Override
+    public Boolean getCollaboratorDeletedStatus(String collaboratorId) {
+        Collaborator collaborator = collaboratorDao.findById(collaboratorId);
+
+        if (collaborator == null) {
+            return null;
+        }
+
+        return (collaborator.getDeleted() != null) ? collaborator.getDeleted() : true;
+    }
+    @Override
     public List<Collaborator> searchByFullnameRegexIgnoreCase(String fullname) {
         // Vérifie que fullname n'est ni null ni vide
         if (fullname == null || fullname.trim().isEmpty()) {
@@ -102,23 +136,5 @@ public class CollaboratorServiceImpl  implements CollaboratorService {
 
 
 
-    @Override
-    public Boolean getCollaboratoronlineStatus(String collaboratorId) {
-        Collaborator collaborator = collaboratorDao.findById(collaboratorId);
-
-        // Si l'attribut 'onLine' est null ou inexistant, retourner false
-        return collaborator.getonLine() != null ? collaborator.getonLine() : false;
-
-    }
-    @Override
-    public Boolean getCollaboratorDeletedStatus(String collaboratorId) {
-        Collaborator collaborator = collaboratorDao.findById(collaboratorId);
-
-        if (collaborator == null) {
-            return null;
-        }
-
-        return (collaborator.getDeleted() != null) ? collaborator.getDeleted() : true;
-    }
 
 }

@@ -11,8 +11,8 @@ public interface CollaboratorService {
     Map<String, Long>getCreationDatesHistogram();
     List<Collaborator> getAllCollaborators();
      Boolean getCollaboratorDeletedStatus(String collaboratorId);
-
-    Boolean getCollaboratoronlineStatus(String collaboratorId);
+    List<Collaborator> getCollaboratoroffline() ;
+    List<Collaborator> getCollaboratoronline();
     Collaborator getCollaboratorById(String id);
     List<Collaborator>getCollaboratorByGroupId(String groupId);
     List<Collaborator> getCollaboratorIsAdmin();
