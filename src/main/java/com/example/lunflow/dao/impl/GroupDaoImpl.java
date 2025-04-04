@@ -33,7 +33,7 @@ public class GroupDaoImpl implements GroupDao {
     }
 
     @Override
-    public Integer findnbWrkftype(String id) {
+    public Integer findNbWrkftypeById(String id) {
         return groupRepo.findNbWrkftypeById(id);
     }
 

@@ -11,7 +11,7 @@ public interface GroupService {
     Group getGroupById(String id);
     List<String>  getCollaboratorList(String groupId);
     List<Collaborator>  getCollaboratorDetails(List<String> collabIds);
-    Integer getnbWrkftype(String id);
+    Integer getNbWrkflowtypeById(String id);
 
 
 }

@@ -49,12 +49,16 @@ public class GroupController {
 
         return ResponseEntity.notFound().build();
     }
+    @GetMapping("/{id}/nbwrkftype")
+    public Integer getNbWrkflowtypeByGroupId(@PathVariable String id) {
+        Integer nbWrkftype = groupService.getNbWrkflowtypeById(id);
+        if (nbWrkftype == null) {
+            return 0;
+        }
 
-    @GetMapping("/{id}/nbWrkftype")
-    public ResponseEntity<Integer> getnbWrkftype(@PathVariable String id) {
-        int nbWrkftype = groupService.getnbWrkftype(id);
-        return ResponseEntity.ok(nbWrkftype);
+        return nbWrkftype;
     }
+
 }
 
 

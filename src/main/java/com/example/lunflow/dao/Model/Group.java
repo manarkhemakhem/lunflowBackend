@@ -41,5 +41,8 @@ public class Group {
     public List<String> getCollabIdList() {
         return  collabIdList;
 
+    }    // Getter pour nbWrkftype
+    public Integer getnbWrkftype() {
+        return nbWrkftype;
     }
 }

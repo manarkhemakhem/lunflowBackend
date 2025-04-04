@@ -12,6 +12,8 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
+
 @Service
 public class GroupServiceImpl  implements GroupService {
     @Autowired
@@ -67,8 +69,13 @@ public class GroupServiceImpl  implements GroupService {
     }
 
     @Override
-    public Integer getnbWrkftype(String id) {
-        return  groupDao.findnbWrkftype(id);
+    public Integer getNbWrkflowtypeById(String id) {
+        Group group = groupDao.findById(id);
+        // Si le groupe est trouvé, retourner la valeur de nbWrkflowtype
+        if (group != null) {
+            return group.getnbWrkftype();
+        }
+        return 0;
     }
 }
 
