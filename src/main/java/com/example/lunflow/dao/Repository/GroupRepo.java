@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface GroupRepo  extends MongoRepository<Group, String> {
     List<Collaborator> findByCollabIdListIn(List<String> collabIdList);
+    Integer findNbWrkftypeById(String id);
 
 
 }

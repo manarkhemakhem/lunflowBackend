@@ -65,5 +65,10 @@ public class GroupServiceImpl  implements GroupService {
         }
         return null;
     }
+
+    @Override
+    public Integer getnbWrkftype(String id) {
+        return  groupDao.findnbWrkftype(id);
+    }
 }
 

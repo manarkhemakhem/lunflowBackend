@@ -11,5 +11,6 @@ public interface GroupDao {
     Group findById(String id);
   List<Collaborator> findCollabList(List<String> collabIdList);
 
+    Integer findnbWrkftype(String id);
 
 }

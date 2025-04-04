@@ -32,6 +32,10 @@ public class GroupDaoImpl implements GroupDao {
        return groupRepo.findByCollabIdListIn(collabIdList);
     }
 
+    @Override
+    public Integer findnbWrkftype(String id) {
+        return groupRepo.findNbWrkftypeById(id);
+    }
 
 
 }
