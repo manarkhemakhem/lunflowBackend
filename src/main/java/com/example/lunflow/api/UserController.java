@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @CrossOrigin(origins = "*")// Pour Angular
 @RestController
@@ -54,4 +55,10 @@ public class UserController {
     public List<User> getAllAdminFalse() {
         return userService.getAllAdminFalse();
     }
+    @GetMapping("/histogram")
+    public  List<User>  getHistogram() {
+        return userService.getUsersGroupedByQuarter();
+    }
+
+
 }
