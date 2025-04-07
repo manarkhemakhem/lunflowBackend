@@ -71,4 +71,6 @@ public class CollaboratorController {
 @GetMapping("/search")
 public List<Collaborator> search(@RequestParam String fullname) {
     // Appel au service qui interroge le repository
-    return collaboratorService.searchByFullnameRegexIgnoreCase(fullname);}}
+    return collaboratorService.searchByFullnameRegexIgnoreCase(fullname);
+    }
+}
