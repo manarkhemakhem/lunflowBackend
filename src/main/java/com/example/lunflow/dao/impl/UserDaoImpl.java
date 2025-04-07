@@ -28,4 +28,35 @@ public class UserDaoImpl implements UserDao {
     @Override
     public User findById(String id) {
         return userRepo.findById(id).orElse(null);
-    }}
+    }
+
+    @Override
+    public List<User> findByConfirmedTrue() {
+        return userRepo.findByConfirmedTrue();
+    }
+
+    @Override
+    public List<User> findByConfirmedFalse() {
+        return userRepo.findByConfirmedFalse();
+    }
+
+    @Override
+    public List<User> findByBlockedTrue() {
+        return userRepo.findByBlockedTrue();
+    }
+
+    @Override
+    public List<User> findByBlockedFalse() {
+        return userRepo.findByBlockedFalse();
+    }
+
+    @Override
+    public List<User> findByAdministratorTrue() {
+        return userRepo.findByAdministratorTrue();
+    }
+
+    @Override
+    public List<User> findByAdministratorFalse() {
+        return userRepo.findByAdministratorFalse();
+    }
+}

@@ -26,6 +26,32 @@ public class UserController {
     public User getUserById(@PathVariable String id) {
         return userService.getUserById(id);
     }
+    @GetMapping("/confirmed")
+    public List<User> getAllConfirmedTrue() {
+        return userService.getAllConfirmedTrue();
+    }
 
+    @GetMapping("/NotConfirmed")
+    public List<User> getAllConfirmedFalse() {
+        return userService.getAllConfirmedFalse();
+    }
+    @GetMapping("/blocked")
+    public List<User> getAllBlockedTrue() {
+        return userService.getAllBlockedTrue();
+    }
 
+    @GetMapping("/notBlocked")
+    public List<User> getAllBlockedFalse() {
+        return userService.getAllBlockedFalse();
+    }
+
+    @GetMapping("/Adminastrator")
+    public List<User> getAllAdminTrue() {
+        return userService.getAllAdminTrue();
+    }
+
+    @GetMapping("/notAdminastrator")
+    public List<User> getAllAdminFalse() {
+        return userService.getAllAdminFalse();
+    }
 }

@@ -26,5 +26,35 @@ public class UserServiceImpl  implements UserService {
         return userDao.findById(id);
     }
 
+    @Override
+    public List<User> getAllConfirmedTrue() {
+        return userDao.findByConfirmedTrue();
+    }
+
+    @Override
+    public List<User> getAllConfirmedFalse() {
+        return userDao.findByConfirmedFalse();
+    }
+
+    @Override
+    public List<User> getAllBlockedTrue() {
+        return userDao.findByBlockedTrue();
+    }
+
+    @Override
+    public List<User> getAllBlockedFalse() {
+        return userDao.findByBlockedFalse();
+    }
+
+    @Override
+    public List<User> getAllAdminTrue() {
+        return userDao.findByAdministratorTrue();
+    }
+
+    @Override
+    public List<User> getAllAdminFalse() {
+        return userDao.findByAdministratorFalse();
+    }
+
 
 }

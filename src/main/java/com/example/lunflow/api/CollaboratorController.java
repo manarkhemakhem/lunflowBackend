@@ -41,7 +41,11 @@ public class CollaboratorController {
     @GetMapping("/Admin")
     public List<Collaborator> getAllAdmin() {
         return collaboratorService.getCollaboratorIsAdmin();
+    }@GetMapping("/NotAdmin")
+    public List<Collaborator> getAllNotAdmin() {
+        return collaboratorService.getCollaboratorIsAdminFalse();
     }
+
 
     @GetMapping("/onLine")
     public List<Collaborator> getAllOnLine() {
@@ -50,10 +54,6 @@ public class CollaboratorController {
     @GetMapping("/offLine")
     public List<Collaborator> getAllOffLine() {
         return collaboratorService.getCollaboratoroffline();
-    }
-    @GetMapping("/NotAdmin")
-    public List<Collaborator> getAllNotAdmin() {
-        return collaboratorService.getCollaboratorIsAdminFalse();
     }
 
     @GetMapping("/group/{groupId}")
