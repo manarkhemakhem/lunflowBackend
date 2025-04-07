@@ -45,12 +45,12 @@ public class UserController {
         return userService.getAllBlockedFalse();
     }
 
-    @GetMapping("/Adminastrator")
+    @GetMapping("/administrator")
     public List<User> getAllAdminTrue() {
         return userService.getAllAdminTrue();
     }
 
-    @GetMapping("/notAdminastrator")
+    @GetMapping("/notadministrator")
     public List<User> getAllAdminFalse() {
         return userService.getAllAdminFalse();
     }
