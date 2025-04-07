@@ -3,6 +3,8 @@ package com.example.lunflow.Service;
 import com.example.lunflow.dao.Model.Group;
 import com.example.lunflow.dao.Model.User;
 
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 public interface UserService {
@@ -17,6 +19,5 @@ public interface UserService {
 
     List<User> getAllAdminTrue();
     List<User> getAllAdminFalse();
-    List<User>  getUsersGroupedByQuarter();
-
+    List<LocalDateTime> getAllcreationDate  ();
 }

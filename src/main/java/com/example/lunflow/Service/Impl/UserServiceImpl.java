@@ -9,7 +9,10 @@ import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.stereotype.Service;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.group;
@@ -64,22 +67,16 @@ public class UserServiceImpl  implements UserService {
     public List<User> getAllAdminFalse() {
         return userDao.findByAdministratorFalse();
     }
+
+
+
     @Override
 
-    public List<User> getUsersGroupedByQuarter() {
-        Aggregation aggregation = Aggregation.newAggregation(
-                project()
-                        .andExpression("creationDate.getMonth()").as("month")
-                        .andExpression("creationDate.getYear()").as("year")
-                        .and("creationDate").as("creationDate"),
-                group("year", "month")
-                        .count().as("userCount")
-                        .push("creationDate").as("dates"),
-                project("userCount", "dates")
-        );
-
-        AggregationResults<User> results = mongoTemplate.aggregate(aggregation, User.class, User.class);
-        return results.getMappedResults();
+    public List<LocalDateTime> getAllcreationDate() {
+        List<User> users = userDao.findAll();  // Récupère tous les utilisateurs
+        return users.stream()                        // Parcourt chaque utilisateur
+                .map(User::getcreationDate)    // Récupère la date de création
+                .collect(Collectors.toList());  // Retourne une liste de dates
     }
 
 }
