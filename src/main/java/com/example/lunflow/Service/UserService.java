@@ -17,5 +17,6 @@ public interface UserService {
 
     List<User> getAllAdminTrue();
     List<User> getAllAdminFalse();
+    List<User>  getUsersGroupedByQuarter();
 
 }
