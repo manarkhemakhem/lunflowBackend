@@ -1,0 +1,16 @@
+{
+  "databases": [
+    {
+      "name": "testmanar1",
+      "uri": "mongodb://localhost:27017/testmanar1"
+    },
+    {
+      "name": "testmanar2",
+      "uri": "mongodb://localhost:27017/testmanar2"
+    },
+    {
+      "name": "testmanar",
+      "uri": "mongodb://localhost:27017/testmanar"
+    }
+  ]
+}
