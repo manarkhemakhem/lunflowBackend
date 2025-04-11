@@ -5,6 +5,7 @@ import com.example.lunflow.dao.Model.Collaborator;
 import com.example.lunflow.dao.Repository.CollaboratorRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+
 import java.util.List;
 
 @Repository
