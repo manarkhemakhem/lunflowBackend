@@ -1,4 +1,4 @@
-package com.example.lunflow;
+package com.example.lunflow.DataBases;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.MongoClient;
@@ -11,9 +11,7 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 
 @Component
@@ -21,21 +19,32 @@ public class MongoDataBaseConfig {
     @Autowired
     private MongoTemplate mongoTemplate;
 
-    // Charger la liste des configurations des bases de données
+    // Lire les configurations des bases de données MongoDB depuis un fichier JSON
     public List<Database> loadDatabaseConfigs() {
         try {
-            // Assure-toi que le fichier est dans le bon répertoire
+            //          → Paths.get("") → ça veut dire le répertoire courant (là où ton programme tourne).
+
+            // → .toAbsolutePath() → transforme ce chemin relatif en chemin absolu.
+
+            // → .toString() → convertit le chemin en texte (String) pour le donner au constructeur File.
+
             File jarDir = new File(Paths.get("").toAbsolutePath().toString());
+
+            // Indique l'emplacement du fichier JSON contenant les configs des bases
+            //  ici on est entraint  de construire un chemin /parent/child (database.json)
+
             File configFile = new File(jarDir, "src/main/resources/database.json");
 
+            // Vérifie si le fichier existe
             if (!configFile.exists()) {
                 throw new RuntimeException("Configuration file not found: " + configFile.getAbsolutePath());
             }
 
+            // Lire et convertir le fichier JSON en objet Java
             ObjectMapper objectMapper = new ObjectMapper();
             DatabaseConfigData config = objectMapper.readValue(configFile, DatabaseConfigData.class);
 
-            return config.getDatabases();  // Récupérer la liste des bases de données à partir de l'objet
+            return config.getDatabases(); // Retourne la liste des bases de données
 
         } catch (IOException e) {
             throw new RuntimeException("Error reading configuration file", e);
@@ -64,5 +73,14 @@ public class MongoDataBaseConfig {
             }
         }
         return null;
+    } public List<Database> getAllDatabases() throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        // Récupérer le chemin du fichier JSON
+        File jarDir = new File(Paths.get("").toAbsolutePath().toString());
+        File configFile = new File(jarDir, "src/main/resources/database.json");
+
+        // Lire le JSON et le convertir en liste d'objets Database
+        return Arrays.asList(objectMapper.readValue(configFile, Database[].class));
     }
 }
