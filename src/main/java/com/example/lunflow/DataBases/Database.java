@@ -1,4 +1,4 @@
-package com.example.lunflow;
+package com.example.lunflow.DataBases;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
