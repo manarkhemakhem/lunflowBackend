@@ -1,5 +1,8 @@
 package com.example.lunflow.DataBases;
 
+import com.example.lunflow.dao.Model.Collaborator;
+import com.example.lunflow.dao.Model.Group;
+import com.example.lunflow.dao.Model.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -94,5 +97,27 @@ public class MongoDataBaseConfig {
         } else {
             throw new IllegalArgumentException("Base de données non trouvée : " + database.getName());
         }
+    }
+    public List<Collaborator> getDataFrom(String dbName) {
+        MongoTemplate template = getMongoTemplateForDatabase(dbName);
+        return template.findAll(Collaborator.class);
+    }
+    private Class<?> getClassForCollection(String collectionName) {
+        return switch (collectionName.toLowerCase()) {
+            case "collaborators" -> Collaborator.class;
+            case "user " -> User.class;
+            case "goup" -> Group.class;
+            default -> throw new IllegalArgumentException("Collection inconnue : " + collectionName);
+        };
+    }
+    public List<?> getDataFrom(String dbName, String collectionName) {
+        MongoTemplate template = getMongoTemplateForDatabase(dbName);
+        Class<?> clazz = getClassForCollection(collectionName);
+        return template.findAll(clazz);
+    }
+    private MongoTemplate getMongoTemplateForDatabase(String dbName) {
+        // Crée ou récupère un MongoTemplate dynamique en fonction du nom de la base
+        MongoClient client = MongoClients.create("mongodb://localhost:27017");
+        return new MongoTemplate(client, dbName);
     }
 }
