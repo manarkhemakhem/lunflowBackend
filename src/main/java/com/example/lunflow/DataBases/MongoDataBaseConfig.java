@@ -99,7 +99,7 @@ public class MongoDataBaseConfig {
         }
     }
 
-    private Class<?> getClassForCollection(String collectionName) {
+    Class<?> getClassForCollection(String collectionName) {
         return switch (collectionName.toLowerCase()) {
             case "collaborators" -> Collaborator.class;
             case "user " -> User.class;
