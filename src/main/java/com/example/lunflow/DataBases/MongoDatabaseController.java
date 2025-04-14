@@ -23,11 +23,7 @@ public class MongoDatabaseController {
 
     //     Endpoint pour tester les connexions à toutes les bases de données
 
-    @GetMapping
-    public List<Collaborator> getDataFromDatabase(@RequestParam String dbName,@RequestParam String collection)
- {
-        return mongoDataBaseConfig.getDataFrom(dbName);
-    }
+
     @GetMapping("/all")
     public List<Database> getAllDatabases() {
         System.out.println("=== loadDatabaseConfigs ===");
