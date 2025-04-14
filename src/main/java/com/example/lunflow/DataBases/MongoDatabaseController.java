@@ -1,7 +1,10 @@
 package com.example.lunflow.DataBases;
 
 import com.example.lunflow.dao.Model.Collaborator;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,15 +34,19 @@ public class MongoDatabaseController {
     }
 
     @GetMapping("/{databaseName}/{collectionName}")
-    public List<Database> getDatabaseData(
+    public List<?> getDatabaseData(
             @PathVariable String databaseName,
             @PathVariable String collectionName) {
 
-        Database database = mongoDataBaseConfig.findDatabaseByName(databaseName);
-        if (database == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Database not found");
-        }
-        return mongoDataBaseConfig.getDataFromDatabase(database, collectionName);
+        // Crée un client MongoDB pour la base de données spécifiée
+        MongoClient client = MongoClients.create("mongodb://localhost:27017");
+        MongoTemplate template = new MongoTemplate(client, databaseName);
+
+        // Détermine la classe Java correspondant à la collection
+        Class<?> clazz = mongoDataBaseConfig.getClassForCollection(collectionName);
+
+        // Récupère tous les documents de la collection
+        return template.findAll(clazz, collectionName);
     }
     @GetMapping("/testConnection/{databaseName}")
     public ResponseEntity<String> testConnection(@PathVariable String databaseName) {
