@@ -98,10 +98,7 @@ public class MongoDataBaseConfig {
             throw new IllegalArgumentException("Base de données non trouvée : " + database.getName());
         }
     }
-    public List<Collaborator> getDataFrom(String dbName) {
-        MongoTemplate template = getMongoTemplateForDatabase(dbName);
-        return template.findAll(Collaborator.class);
-    }
+
     private Class<?> getClassForCollection(String collectionName) {
         return switch (collectionName.toLowerCase()) {
             case "collaborators" -> Collaborator.class;
