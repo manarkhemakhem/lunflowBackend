@@ -1,16 +1,22 @@
 package com.example.lunflow.DataBases;
 
+import com.example.lunflow.dao.Model.Collaborator;
+import com.example.lunflow.dao.Model.Group;
+import com.example.lunflow.dao.Model.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -82,5 +88,36 @@ public class MongoDataBaseConfig {
 
         // Lire le JSON et le convertir en liste d'objets Database
         return Arrays.asList(objectMapper.readValue(configFile, Database[].class));
+    }
+    public List<Database> getDataFromDatabase(Database database, String collectionName) {
+        // Vérifier si la base de données existe
+        if (mongoTemplate.getDb().getName().equals(database.getName())) {
+            // Récupérer les données de la collection spécifiée
+            return mongoTemplate.findAll(Database.class, collectionName);
+        } else {
+            throw new IllegalArgumentException("Base de données non trouvée : " + database.getName());
+        }
+    }
+    public List<Collaborator> getDataFrom(String dbName) {
+        MongoTemplate template = getMongoTemplateForDatabase(dbName);
+        return template.findAll(Collaborator.class);
+    }
+    private Class<?> getClassForCollection(String collectionName) {
+        return switch (collectionName.toLowerCase()) {
+            case "collaborators" -> Collaborator.class;
+            case "user " -> User.class;
+            case "goup" -> Group.class;
+            default -> throw new IllegalArgumentException("Collection inconnue : " + collectionName);
+        };
+    }
+    public List<?> getDataFrom(String dbName, String collectionName) {
+        MongoTemplate template = getMongoTemplateForDatabase(dbName);
+        Class<?> clazz = getClassForCollection(collectionName);
+        return template.findAll(clazz);
+    }
+    private MongoTemplate getMongoTemplateForDatabase(String dbName) {
+        // Crée ou récupère un MongoTemplate dynamique en fonction du nom de la base
+        MongoClient client = MongoClients.create("mongodb://localhost:27017");
+        return new MongoTemplate(client, dbName);
     }
 }
