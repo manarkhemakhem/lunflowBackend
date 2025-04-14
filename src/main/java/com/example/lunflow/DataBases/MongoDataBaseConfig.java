@@ -101,9 +101,9 @@ public class MongoDataBaseConfig {
 
     Class<?> getClassForCollection(String collectionName) {
         return switch (collectionName.toLowerCase()) {
-            case "collaborators" -> Collaborator.class;
-            case "user " -> User.class;
-            case "goup" -> Group.class;
+            case "collaborator" -> Collaborator.class;
+            case "user" -> User.class;
+            case "group" -> Group.class;
             default -> throw new IllegalArgumentException("Collection inconnue : " + collectionName);
         };
     }
