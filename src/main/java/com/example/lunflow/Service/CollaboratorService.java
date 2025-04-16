@@ -19,5 +19,6 @@ public interface CollaboratorService {
     List<Collaborator> getCollaboratorIsAdminFalse();
 
     List<Collaborator> searchByFullnameRegexIgnoreCase(String fullname);
+    Map<String, Long> countByField(String fieldName) ;
 
 }

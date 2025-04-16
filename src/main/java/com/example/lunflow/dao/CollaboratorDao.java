@@ -22,5 +22,6 @@ public interface CollaboratorDao
     List<Collaborator> searchByFullnameRegexIgnoreCase(String fullname);
 
     void deleteById(String id);
+
 }
 

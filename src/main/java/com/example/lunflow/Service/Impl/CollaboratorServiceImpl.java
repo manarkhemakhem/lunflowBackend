@@ -7,6 +7,9 @@ import com.example.lunflow.dao.Repository.CollaboratorRepo;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.*;
+import org.bson.Document;
+
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
@@ -14,9 +17,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -66,6 +67,40 @@ public class CollaboratorServiceImpl  implements CollaboratorService {
     @Override
     public List<Collaborator> getCollaboratorByGroupId(String groupId) {
         return collaboratorDao.findByGroupId(groupId);
+    }
+    @Override
+    public Map<String, Long> countByField(String fieldName) {
+        // Utilisation de AggregationExpression pour injecter une expression MongoDB
+        AggregationExpression ifNullExpression = context -> new org.bson.Document(
+                "$ifNull",
+                Arrays.asList("$" + fieldName, false)
+        );
+
+        // Étape 1 : Projection
+        ProjectionOperation project = Aggregation.project()
+                .and(ifNullExpression).as("fieldValue");
+
+        // Étape 2 : Groupement par la valeur projetée
+        GroupOperation group = Aggregation.group("fieldValue").count().as("count");
+
+        // Étape 3 : Agrégation
+        Aggregation aggregation = Aggregation.newAggregation(project, group);
+
+        AggregationResults<org.bson.Document> results = mongoTemplate.aggregate(
+                aggregation, "collaborateurs", org.bson.Document.class
+        );
+
+        // Étape 4 : Mapping des résultats
+        Map<String, Long> response = new HashMap<>();
+        for (org.bson.Document doc : results) {
+            Object key = doc.get("_id");
+            Object count = doc.get("count");
+            if (key != null && count != null) {
+                response.put(key.toString(), Long.parseLong(count.toString()));
+            }
+        }
+
+        return response;
     }
 
     @Override

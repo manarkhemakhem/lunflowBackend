@@ -7,9 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.lang.reflect.Field;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*")// Pour Angular
 @RestController
@@ -66,11 +69,21 @@ public class CollaboratorController {
         return ResponseEntity.ok(deletedStatus);
     }
 
-
+    @GetMapping("/fields")
+    public List<String> getCollaborateurFieldNames() {
+        Field[] fields = Collaborator.class.getDeclaredFields();
+        return Arrays.stream(fields)
+                .map(Field::getName)
+                .collect(Collectors.toList());
+    }
 
 @GetMapping("/search")
 public List<Collaborator> search(@RequestParam String fullname) {
     // Appel au service qui interroge le repository
     return collaboratorService.searchByFullnameRegexIgnoreCase(fullname);
+    }
+    @GetMapping("/count-by-field/{fieldName}")
+    public Map<String, Long> countByField(@PathVariable String fieldName) {
+        return collaboratorService.countByField(fieldName);
     }
 }
