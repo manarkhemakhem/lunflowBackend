@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*")// Pour Angular
 @RestController
-@RequestMapping("/api/collaborators")
+@RequestMapping("/api/{databaseName}/collaborators")
 public class CollaboratorController {
     @Autowired
     private final CollaboratorService collaboratorService;

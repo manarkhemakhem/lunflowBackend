@@ -12,7 +12,7 @@ import java.util.Map;
 
 @CrossOrigin(origins = "*")// Pour Angular
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/{databaseName}/users")
 public class UserController {
     public final UserService userService;
     @Autowired

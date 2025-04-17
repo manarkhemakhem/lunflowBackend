@@ -15,7 +15,7 @@ import java.util.List;
 
 @CrossOrigin(origins = "*")// Pour Angular
 @RestController
-@RequestMapping("/api/groups")
+@RequestMapping("/api/{databaseName}/groups")
 public class GroupController {
     private final GroupService groupService;
 
