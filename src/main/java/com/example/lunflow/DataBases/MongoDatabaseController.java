@@ -47,6 +47,16 @@ public class MongoDatabaseController {
         // Récupère tous les documents de la collection
         return template.findAll(clazz, collectionName);
     }
+    @GetMapping("/{databaseName}/filter")
+    public List<?> filterByField(
+            @PathVariable String databaseName,
+            @RequestParam String collection,
+            @RequestParam String field,
+            @RequestParam String value
+    ) {
+        return mongoDataBaseConfig.filterByField(databaseName, collection, field, value);
+    }
+
     @GetMapping("/testConnection/{databaseName}")
     public ResponseEntity<String> testConnection(@PathVariable String databaseName) {
         System.out.println("🔍 Testing connection for: " + databaseName);
