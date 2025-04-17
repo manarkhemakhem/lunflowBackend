@@ -9,6 +9,7 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.stereotype.Component;
@@ -22,9 +23,9 @@ import java.util.List;
 
 @Component
 public class MongoDataBaseConfig {
-    @Autowired
-    private MongoTemplate mongoTemplate;
-
+    public void doSomething() {
+        System.out.println("MongoDatabaseManager is working !");
+    }
     // Lire les configurations des bases de données MongoDB depuis un fichier JSON
     public List<Database> loadDatabaseConfigs() {
         try {
@@ -89,15 +90,12 @@ public class MongoDataBaseConfig {
         // Lire le JSON et le convertir en liste d'objets Database
         return Arrays.asList(objectMapper.readValue(configFile, Database[].class));
     }
-    public List<Database> getDataFromDatabase(Database database, String collectionName) {
-        // Vérifier si la base de données existe
-        if (mongoTemplate.getDb().getName().equals(database.getName())) {
-            // Récupérer les données de la collection spécifiée
-            return mongoTemplate.findAll(Database.class, collectionName);
-        } else {
-            throw new IllegalArgumentException("Base de données non trouvée : " + database.getName());
-        }
+    public List<?> getDataFromDatabase(Database database, String collectionName) {
+        MongoTemplate dynamicTemplate = getMongoTemplateForDatabase(database.getName());
+        Class<?> clazz = getClassForCollection(collectionName);
+        return dynamicTemplate.findAll(clazz, collectionName);
     }
+
 
     Class<?> getClassForCollection(String collectionName) {
         return switch (collectionName.toLowerCase()) {
@@ -117,4 +115,15 @@ public class MongoDataBaseConfig {
         MongoClient client = MongoClients.create("mongodb://localhost:27017");
         return new MongoTemplate(client, dbName);
     }
+    @Bean
+    public MongoClient mongoClient() {
+        return MongoClients.create("mongodb://localhost:27017");
+    }
+
+    @Bean(name = "mongoTemplate")
+    public MongoTemplate mongoTemplate(MongoClient mongoClient) {
+        // Choisis une base par défaut, par exemple la première dans ton fichier JSON
+        return new MongoTemplate(mongoClient, "testmanar");
+    }
 }
+
