@@ -26,13 +26,6 @@ public class MongoDatabaseController {
 
     //     Endpoint pour tester les connexions à toutes les bases de données
 
-    Class<?> getClassForCollection(String collectionName) {
-        return switch (collectionName.toLowerCase()) {
-            case "collaborator" -> Collaborator.class;
-            // ajoute d'autres collections ici si besoin
-            default -> throw new IllegalArgumentException("Collection inconnue : " + collectionName);
-        };
-    }
     @GetMapping("/all")
     public List<Database> getAllDatabases() {
         System.out.println("=== loadDatabaseConfigs ===");
