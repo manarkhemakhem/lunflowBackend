@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -96,6 +98,23 @@ public class MongoDataBaseConfig {
         return dynamicTemplate.findAll(clazz, collectionName);
     }
 
+    public List<?> filterByField(String dbName, String collection, String field, String value) {
+        MongoTemplate template = getMongoTemplateForDatabase(dbName);
+        Class<?> clazz = getClassForCollection(collection);
+
+        Query query = new Query();
+
+        // Auto-detect boolean
+        Object typedValue;
+        if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+            typedValue = Boolean.parseBoolean(value);
+        } else {
+            typedValue = value;
+        }
+
+        query.addCriteria(Criteria.where(field).is(typedValue));
+        return template.find(query, clazz, collection);
+    }
 
     Class<?> getClassForCollection(String collectionName) {
         return switch (collectionName.toLowerCase()) {
