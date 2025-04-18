@@ -12,7 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.util.List;
-
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/database")
 
@@ -59,14 +59,13 @@ public class MongoDatabaseController {
 
         boolean isConnected = mongoDataBaseConfig.testConnection(database);
         if (isConnected) {
-            System.out.println("✅ Connection successful: " + databaseName);
+            System.out.println(" Connection successful: " + databaseName);
             return ResponseEntity.ok("Connection to database '" + databaseName + "' successful.");
         } else {
-            System.out.println("⚠️ Connection failed: " + databaseName);
+            System.out.println(" Connection failed: " + databaseName);
             return ResponseEntity.status(500).body("Connection to database '" + databaseName + "' failed.");
         }
     }
-
 }
 
 

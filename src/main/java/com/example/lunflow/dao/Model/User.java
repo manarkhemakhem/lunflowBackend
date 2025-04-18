@@ -9,7 +9,7 @@ import java.util.Date;
 import java.util.List;
 
 @Data
-@Document(collection = "user")
+@Document(collection ="user")
 public class User {
     @Id
     private String id;
