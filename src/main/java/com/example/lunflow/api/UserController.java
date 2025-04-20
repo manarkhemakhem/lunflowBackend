@@ -1,65 +1,65 @@
 package com.example.lunflow.api;
 
 import com.example.lunflow.Service.UserService;
-import com.example.lunflow.dao.Model.Group;
 import com.example.lunflow.dao.Model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
-@CrossOrigin(origins = "*")// Pour Angular
+@CrossOrigin(origins = "*") // Pour Angular
 @RestController
 @RequestMapping("/api/{databaseName}/users")
 public class UserController {
-    public final UserService userService;
+    private final UserService userService;
+
     @Autowired
-    public  UserController(UserService userService)
-    {
-        this.userService=userService;
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
+
     @GetMapping("/all")
-    public List<User> getAllUsers() {
-        return userService.getAllUsers();
+    public List<User> getAllUsers(@PathVariable String databaseName) {
+        return userService.getAllUsers(databaseName);
     }
+
     @GetMapping("/{id}")
-    public User getUserById(@PathVariable String id) {
-        return userService.getUserById(id);
+    public User getUserById(@PathVariable String databaseName, @PathVariable String id) {
+        return userService.getUserById(databaseName, id);
     }
+
     @GetMapping("/confirmed")
-    public List<User> getAllConfirmedTrue() {
-        return userService.getAllConfirmedTrue();
+    public List<User> getAllConfirmedTrue(@PathVariable String databaseName) {
+        return userService.getAllConfirmedTrue(databaseName);
     }
 
     @GetMapping("/NotConfirmed")
-    public List<User> getAllConfirmedFalse() {
-        return userService.getAllConfirmedFalse();
+    public List<User> getAllConfirmedFalse(@PathVariable String databaseName) {
+        return userService.getAllConfirmedFalse(databaseName);
     }
+
     @GetMapping("/blocked")
-    public List<User> getAllBlockedTrue() {
-        return userService.getAllBlockedTrue();
+    public List<User> getAllBlockedTrue(@PathVariable String databaseName) {
+        return userService.getAllBlockedTrue(databaseName);
     }
 
     @GetMapping("/notBlocked")
-    public List<User> getAllBlockedFalse() {
-        return userService.getAllBlockedFalse();
+    public List<User> getAllBlockedFalse(@PathVariable String databaseName) {
+        return userService.getAllBlockedFalse(databaseName);
     }
 
     @GetMapping("/administrator")
-    public List<User> getAllAdminTrue() {
-        return userService.getAllAdminTrue();
+    public List<User> getAllAdminTrue(@PathVariable String databaseName) {
+        return userService.getAllAdminTrue(databaseName);
     }
 
     @GetMapping("/notadministrator")
-    public List<User> getAllAdminFalse() {
-        return userService.getAllAdminFalse();
+    public List<User> getAllAdminFalse(@PathVariable String databaseName) {
+        return userService.getAllAdminFalse(databaseName);
     }
+
     @GetMapping("/dateCreation")
-    public  List<LocalDateTime>  getDateCration() {
-        return userService.getAllcreationDate();
+    public List<String> getDateCreation(@PathVariable String databaseName) {
+        return userService.getAllCreationDate(databaseName);
     }
-
-
 }

@@ -1,24 +1,20 @@
 package com.example.lunflow.Service;
 
 import com.example.lunflow.dao.Model.Collaborator;
-import org.bson.types.ObjectId;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
 public interface CollaboratorService {
-    Map<String, Long>getCreationDatesHistogram();
-    List<Collaborator> getAllCollaborators();
-     Boolean getCollaboratorDeletedStatus(String collaboratorId);
-    List<Collaborator> getCollaboratoroffline() ;
-    List<Collaborator> getCollaboratoronline();
-    Collaborator getCollaboratorById(String id);
-    List<Collaborator>getCollaboratorByGroupId(String groupId);
-    List<Collaborator> getCollaboratorIsAdmin();
-    List<Collaborator> getCollaboratorIsAdminFalse();
-
-    List<Collaborator> searchByFullnameRegexIgnoreCase(String fullname);
-    Map<String, Long> countByField(String fieldName) ;
-
+    List<Collaborator> getAllCollaborators(String databaseName);
+    Collaborator getCollaboratorById(String databaseName, String id);
+    List<Collaborator> getCollaboratorByGroupId(String databaseName, String groupId);
+    Map<String, Long> getCreationDatesHistogram(String databaseName);
+    Map<String, Long> countByField(String databaseName, String fieldName);
+    List<Collaborator> getCollaboratorIsAdmin(String databaseName);
+    List<Collaborator> getCollaboratorIsAdminFalse(String databaseName);
+    List<Collaborator> getCollaboratoronline(String databaseName);
+    List<Collaborator> getCollaboratoroffline(String databaseName);
+    Boolean getCollaboratorDeletedStatus(String databaseName, String collaboratorId);
+    List<Collaborator> searchByFullnameRegexIgnoreCase(String databaseName, String fullname);
 }

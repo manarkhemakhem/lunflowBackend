@@ -1,81 +1,78 @@
 package com.example.lunflow.Service.Impl;
 
+import com.example.lunflow.DataBases.MongoDataBaseConfig;
 import com.example.lunflow.Service.GroupService;
-import com.example.lunflow.dao.CollaboratorDao;
-import com.example.lunflow.dao.GroupDao;
 import com.example.lunflow.dao.Model.Collaborator;
 import com.example.lunflow.dao.Model.Group;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 
 @Service
-public class GroupServiceImpl  implements GroupService {
+public class GroupServiceImpl implements GroupService {
+    private final MongoDataBaseConfig mongoDataBaseConfig;
+
     @Autowired
-    private MongoTemplate mongoTemplate;
-
-    private final GroupDao groupDao;
-    @Autowired
-
-    public GroupServiceImpl(GroupDao groupDao) {
-        this.groupDao = groupDao;
-    }
-
-
-    @Override
-    public List<Group> getAllGroups() {
-        return groupDao.findAll();
+    public GroupServiceImpl(MongoDataBaseConfig mongoDataBaseConfig) {
+        this.mongoDataBaseConfig = mongoDataBaseConfig;
     }
 
     @Override
-    public Group getGroupById(String id) {
-        return groupDao.findById(id);
+    public List<Group> getAllGroups(String databaseName) {
+        Objects.requireNonNull(databaseName, "Database name cannot be null");
+        MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
+        List<Group> groups = mongoTemplate.findAll(Group.class, "group");
+        System.out.println("GroupServiceImpl: Fetched " + groups.size() + " groups from database '" + databaseName + "'");
+        return groups;
     }
 
     @Override
+    public Group getGroupById(String databaseName, String id) {
+        Objects.requireNonNull(databaseName, "Database name cannot be null");
+        Objects.requireNonNull(id, "Group ID cannot be null");
+        MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
+        Group group = mongoTemplate.findById(id, Group.class, "group");
+        System.out.println("GroupServiceImpl: Fetched group ID '" + id + "' from database '" + databaseName + "': " + (group != null ? group.getLabel() : "null"));
+        return group;
+    }
 
-    public List<String> getCollaboratorList(String groupId) {
-        // Création du critère pour l'ID du groupe
-        Criteria groupCriteria = Criteria.where("_id").is(groupId);
+    @Override
+    public List<String> getCollaboratorList(String databaseName, String groupId) {
+        Objects.requireNonNull(databaseName, "Database name cannot be null");
+        Objects.requireNonNull(groupId, "Group ID cannot be null");
+        Group group = getGroupById(databaseName, groupId);
+        List<String> collabIds = group != null ? group.getCollabIdList() : new ArrayList<>();
+        System.out.println("GroupServiceImpl: Fetched " + collabIds.size() + " collaborator IDs for group ID '" + groupId + "' from database '" + databaseName + "'");
+        return collabIds;
+    }
 
-        // Requête pour obtenir le groupe avec l'attribut collabIdList
-        Query query = new Query(groupCriteria);
-
-        // Récupérer le groupe à partir de MongoDB
-        Group group = mongoTemplate.findOne(query, Group.class);
-
-        if (group != null) {
-            // Récupérer la liste des ID des collaborateurs
-            return group.getCollabIdList();
+    @Override
+    public List<Collaborator> getCollaboratorDetails(String databaseName, List<String> collabIds) {
+        Objects.requireNonNull(databaseName, "Database name cannot be null");
+        Objects.requireNonNull(collabIds, "Collaborator IDs cannot be null");
+        MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
+        List<Collaborator> collaborators = new ArrayList<>();
+        for (String id : collabIds) {
+            Collaborator collaborator = mongoTemplate.findById(id, Collaborator.class, "collaborator");
+            if (collaborator != null) {
+                collaborators.add(collaborator);
+            }
         }
-
-        return null;
-    }
-    @Override
-    // Récupérer les détails des collaborateurs en fonction de leurs IDs
-    public List<Collaborator> getCollaboratorDetails(List<String> collabIds) {
-        // Vérifier si la liste des IDs est non vide
-        if (collabIds != null && !collabIds.isEmpty()) {
-            // Requête pour récupérer les collaborateurs dont les IDs sont dans la liste
-            Query collaboratorQuery = new Query(Criteria.where("_id").in(collabIds));
-            return mongoTemplate.find(collaboratorQuery, Collaborator.class);
-        }
-        return null;
+        System.out.println("GroupServiceImpl: Fetched " + collaborators.size() + " collaborators from database '" + databaseName + "'");
+        return collaborators;
     }
 
     @Override
-    public Integer getNbWrkflowtypeById(String id) {
-        Group group = groupDao.findById(id);
-        // Si le groupe est trouvé, retourner la valeur de nbWrkflowtype
-        if (group != null) {
-            return group.getnbWrkftype();
-        }
-        return 0;
+    public Integer getNbWrkflowtypeById(String databaseName, String id) {
+        Objects.requireNonNull(databaseName, "Database name cannot be null");
+        Objects.requireNonNull(id, "Group ID cannot be null");
+        Group group = getGroupById(databaseName, id);
+        Integer nbWrkftype = group != null ? group.getNbWrkftype() : null;
+        System.out.println("GroupServiceImpl: Fetched nbWrkftype=" + nbWrkftype + " for group ID '" + id + "' from database '" + databaseName + "'");
+        return nbWrkftype;
     }
 }
-

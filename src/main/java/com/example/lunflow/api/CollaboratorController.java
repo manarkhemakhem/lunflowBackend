@@ -1,89 +1,169 @@
 package com.example.lunflow.api;
 
+import com.example.lunflow.DataBases.MongoDataBaseConfig;
 import com.example.lunflow.Service.CollaboratorService;
 import com.example.lunflow.dao.Model.Collaborator;
-import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.lang.reflect.Field;
-import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@CrossOrigin(origins = "*")// Pour Angular
+@CrossOrigin(origins = "*") // Pour Angular, consider restricting origins in production
 @RestController
 @RequestMapping("/api/{databaseName}/collaborators")
 public class CollaboratorController {
-    @Autowired
-    private final CollaboratorService collaboratorService;
 
-    public CollaboratorController(CollaboratorService collaboratorService) {
+    private final CollaboratorService collaboratorService;
+    private final MongoDataBaseConfig mongoDataBaseConfig;
+
+    @Autowired
+    public CollaboratorController(CollaboratorService collaboratorService, MongoDataBaseConfig mongoDataBaseConfig) {
         this.collaboratorService = collaboratorService;
+        this.mongoDataBaseConfig = mongoDataBaseConfig;
     }
 
     @GetMapping
-    public List<Collaborator> getAllCollaborators() {
-        return collaboratorService.getAllCollaborators();
+    public ResponseEntity<List<Collaborator>> getAllCollaborators(@PathVariable String databaseName) {
+        try {
+            validateDatabaseName(databaseName);
+            List<Collaborator> collaborators = collaboratorService.getAllCollaborators(databaseName);
+            return ResponseEntity.ok(collaborators);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
 
     @GetMapping("/{id}")
-    public Collaborator getCollaboratorById(@PathVariable String id) {
-        return collaboratorService.getCollaboratorById(id);
+    public ResponseEntity<Collaborator> getCollaboratorById(@PathVariable String databaseName, @PathVariable String id) {
+        try {
+            validateDatabaseName(databaseName);
+            Collaborator collaborator = collaboratorService.getCollaboratorById(databaseName, id);
+            return collaborator != null ? ResponseEntity.ok(collaborator) : ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
+
     @GetMapping("/histogram")
-    public Map<String, Long> getHistogram() {
-        return collaboratorService.getCreationDatesHistogram();
+    public ResponseEntity<Map<String, Long>> getHistogram(@PathVariable String databaseName) {
+        try {
+            validateDatabaseName(databaseName);
+            Map<String, Long> histogram = collaboratorService.getCreationDatesHistogram(databaseName);
+            return ResponseEntity.ok(histogram);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
-
-
 
     @GetMapping("/Admin")
-    public List<Collaborator> getAllAdmin() {
-        return collaboratorService.getCollaboratorIsAdmin();
-    }@GetMapping("/NotAdmin")
-    public List<Collaborator> getAllNotAdmin() {
-        return collaboratorService.getCollaboratorIsAdminFalse();
+    public ResponseEntity<List<Collaborator>> getAllAdmin(@PathVariable String databaseName) {
+        try {
+            validateDatabaseName(databaseName);
+            List<Collaborator> admins = collaboratorService.getCollaboratorIsAdmin(databaseName);
+            return ResponseEntity.ok(admins);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
 
+    @GetMapping("/NotAdmin")
+    public ResponseEntity<List<Collaborator>> getAllNotAdmin(@PathVariable String databaseName) {
+        try {
+            validateDatabaseName(databaseName);
+            List<Collaborator> nonAdmins = collaboratorService.getCollaboratorIsAdminFalse(databaseName);
+            return ResponseEntity.ok(nonAdmins);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
 
     @GetMapping("/onLine")
-    public List<Collaborator> getAllOnLine() {
-        return collaboratorService.getCollaboratoronline();
+    public ResponseEntity<List<Collaborator>> getAllOnLine(@PathVariable String databaseName) {
+        try {
+            validateDatabaseName(databaseName);
+            List<Collaborator> onlineCollaborators = collaboratorService.getCollaboratoronline(databaseName);
+            return ResponseEntity.ok(onlineCollaborators);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
+
     @GetMapping("/offLine")
-    public List<Collaborator> getAllOffLine() {
-        return collaboratorService.getCollaboratoroffline();
+    public ResponseEntity<List<Collaborator>> getAllOffLine(@PathVariable String databaseName) {
+        try {
+            validateDatabaseName(databaseName);
+            List<Collaborator> offlineCollaborators = collaboratorService.getCollaboratoroffline(databaseName);
+            return ResponseEntity.ok(offlineCollaborators);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
 
     @GetMapping("/group/{groupId}")
-    public List<Collaborator> findByGroupId (@PathVariable String groupId) {
-        return collaboratorService.getCollaboratorByGroupId(groupId);
+    public ResponseEntity<List<Collaborator>> findByGroupId(@PathVariable String databaseName, @PathVariable String groupId) {
+        try {
+            validateDatabaseName(databaseName);
+            List<Collaborator> collaborators = collaboratorService.getCollaboratorByGroupId(databaseName, groupId);
+            return ResponseEntity.ok(collaborators);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
+
     @GetMapping("/{id}/deleted")
-    public ResponseEntity<Boolean> getDeletedStatus(@PathVariable String id) {
-        Boolean deletedStatus = collaboratorService.getCollaboratorDeletedStatus(id);
-        return ResponseEntity.ok(deletedStatus);
+    public ResponseEntity<Boolean> getDeletedStatus(@PathVariable String databaseName, @PathVariable String id) {
+        try {
+            validateDatabaseName(databaseName);
+            Boolean deletedStatus = collaboratorService.getCollaboratorDeletedStatus(databaseName, id);
+            return deletedStatus != null ? ResponseEntity.ok(deletedStatus) : ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
 
     @GetMapping("/fields")
-    public List<String> getCollaborateurFieldNames() {
-        Field[] fields = Collaborator.class.getDeclaredFields();
-        return Arrays.stream(fields)
-                .map(Field::getName)
-                .collect(Collectors.toList());
+    public ResponseEntity<List<String>> getCollaborateurFieldNames() {
+        try {
+            Field[] fields = Collaborator.class.getDeclaredFields();
+            List<String> fieldNames = Arrays.stream(fields)
+                    .map(Field::getName)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(fieldNames);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
 
-@GetMapping("/search")
-public List<Collaborator> search(@RequestParam String fullname) {
-    // Appel au service qui interroge le repository
-    return collaboratorService.searchByFullnameRegexIgnoreCase(fullname);
+    @GetMapping("/search")
+    public ResponseEntity<List<Collaborator>> search(@PathVariable String databaseName, @RequestParam String fullname) {
+        try {
+            validateDatabaseName(databaseName);
+            List<Collaborator> collaborators = collaboratorService.searchByFullnameRegexIgnoreCase(databaseName, fullname);
+            return ResponseEntity.ok(collaborators);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
+
     @GetMapping("/count-by-field/{fieldName}")
-    public Map<String, Long> countByField(@PathVariable String fieldName) {
-        return collaboratorService.countByField(fieldName);
+    public ResponseEntity<Map<String, Long>> countByField(@PathVariable String databaseName, @PathVariable String fieldName) {
+        try {
+            validateDatabaseName(databaseName);
+            Map<String, Long> counts = collaboratorService.countByField(databaseName, fieldName);
+            return ResponseEntity.ok(counts);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    private void validateDatabaseName(String databaseName) {
+        if (mongoDataBaseConfig.findDatabaseByName(databaseName) == null) {
+            throw new IllegalArgumentException("Database not found: " + databaseName);
+        }
     }
 }

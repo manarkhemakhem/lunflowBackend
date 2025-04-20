@@ -12,71 +12,98 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.util.List;
+
 @CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/database")
-
 public class MongoDatabaseController {
-    @Autowired
+
     private final MongoDataBaseConfig mongoDataBaseConfig;
 
+    @Autowired
     public MongoDatabaseController(MongoDataBaseConfig mongoDataBaseConfig) {
         this.mongoDataBaseConfig = mongoDataBaseConfig;
     }
 
-    //     Endpoint pour tester les connexions à toutes les bases de données
-
+    // Endpoint pour récupérer toutes les bases de données configurées
     @GetMapping("/all")
-    public List<Database> getAllDatabases() {
-        System.out.println("=== loadDatabaseConfigs ===");
-        return mongoDataBaseConfig.loadDatabaseConfigs();
+    public ResponseEntity<List<MongoDataBaseConfig.Database>> getAllDatabases() {
+        try {
+            List<MongoDataBaseConfig.Database> databases = mongoDataBaseConfig.getAllDatabases();
+            return ResponseEntity.ok(databases);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Erreur lors de la récupération des bases de données : " + e.getMessage());
+        }
     }
 
+    // Endpoint pour récupérer les données d'une collection dans une base de données
     @GetMapping("/{databaseName}/{collectionName}")
-    public List<?> getDatabaseData(
+    public ResponseEntity<List<?>> getDatabaseData(
             @PathVariable String databaseName,
             @PathVariable String collectionName) {
+        try {
+            // Vérifie si la base de données existe
+            MongoDataBaseConfig.Database database = mongoDataBaseConfig.findDatabaseByName(databaseName);
+            if (database == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Base de données non trouvée : " + databaseName);
+            }
 
-        // Crée un client MongoDB pour la base de données spécifiée
-        MongoClient client = MongoClients.create("mongodb://localhost:27017");
-        MongoTemplate template = new MongoTemplate(client, databaseName);
-
-        // Détermine la classe Java correspondant à la collection
-        Class<?> clazz = mongoDataBaseConfig.getClassForCollection(collectionName);
-
-        // Récupère tous les documents de la collection
-        return template.findAll(clazz, collectionName);
+            // Récupère les données à l'aide de MongoTemplate configuré dynamiquement
+            List<?> data = mongoDataBaseConfig.getDataFrom(databaseName, collectionName);
+            return ResponseEntity.ok(data);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Collection invalide : " + e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Erreur lors de la récupération des données : " + e.getMessage());
+        }
     }
+
+    // Endpoint pour filtrer les données par champ
     @GetMapping("/{databaseName}/filter")
-    public List<?> filterByField(
+    public ResponseEntity<List<?>> filterByField(
             @PathVariable String databaseName,
             @RequestParam String collection,
             @RequestParam String field,
-            @RequestParam String value
-    ) {
-        return mongoDataBaseConfig.filterByField(databaseName, collection, field, value);
+            @RequestParam String value) {
+        try {
+            // Vérifie si la base de données existe
+            MongoDataBaseConfig.Database database = mongoDataBaseConfig.findDatabaseByName(databaseName);
+            if (database == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Base de données non trouvée : " + databaseName);
+            }
+
+            // Filtre les données
+            List<?> data = mongoDataBaseConfig.filterByField(databaseName, collection, field, value);
+            return ResponseEntity.ok(data);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Collection ou champ invalide : " + e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Erreur lors du filtrage des données : " + e.getMessage());
+        }
     }
 
+    // Endpoint pour tester la connexion à une base de données
     @GetMapping("/testConnection/{databaseName}")
     public ResponseEntity<String> testConnection(@PathVariable String databaseName) {
-        System.out.println("🔍 Testing connection for: " + databaseName);
-
-        Database database = mongoDataBaseConfig.findDatabaseByName(databaseName);
+        MongoDataBaseConfig.Database database = mongoDataBaseConfig.findDatabaseByName(databaseName);
         if (database == null) {
-            System.out.println("❌ Database not found: " + databaseName);
-            return ResponseEntity.status(404).body("Database with name '" + databaseName + "' not found.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Base de données non trouvée : " + databaseName);
         }
 
-        boolean isConnected = mongoDataBaseConfig.testConnection(database);
+        boolean isConnected = mongoDataBaseConfig.testConnection(databaseName);
         if (isConnected) {
-            System.out.println(" Connection successful: " + databaseName);
-            return ResponseEntity.ok("Connection to database '" + databaseName + "' successful.");
+            return ResponseEntity.ok("Connexion à la base de données '" + databaseName + "' réussie.");
         } else {
-            System.out.println(" Connection failed: " + databaseName);
-            return ResponseEntity.status(500).body("Connection to database '" + databaseName + "' failed.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Échec de la connexion à la base de données '" + databaseName + "'.");
         }
     }
 }
-
-
-

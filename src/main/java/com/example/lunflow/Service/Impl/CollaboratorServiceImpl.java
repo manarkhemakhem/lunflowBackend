@@ -1,15 +1,12 @@
 package com.example.lunflow.Service.Impl;
 
+import com.example.lunflow.DataBases.MongoDataBaseConfig;
 import com.example.lunflow.Service.CollaboratorService;
-import com.example.lunflow.dao.CollaboratorDao;
 import com.example.lunflow.dao.Model.Collaborator;
-import com.example.lunflow.dao.Repository.CollaboratorRepo;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.*;
-import org.bson.Document;
-
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
@@ -21,18 +18,42 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+public class CollaboratorServiceImpl implements CollaboratorService {
 
-public class CollaboratorServiceImpl  implements CollaboratorService {
-    private final CollaboratorDao collaboratorDao;
+    private final MongoDataBaseConfig mongoDataBaseConfig;
+
     @Autowired
-    private MongoTemplate mongoTemplate;
+    public CollaboratorServiceImpl(MongoDataBaseConfig mongoDataBaseConfig) {
+        this.mongoDataBaseConfig = mongoDataBaseConfig;
+    }
+
     @Override
-    public Map<String, Long> getCreationDatesHistogram() {
-        List<Collaborator> collaborators = collaboratorDao.findAll();
+    public List<Collaborator> getAllCollaborators(String databaseName) {
+        MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
+        return mongoTemplate.findAll(Collaborator.class, "collaborator");
+    }
+
+    @Override
+    public Collaborator getCollaboratorById(String databaseName, String id) {
+        MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
+        return mongoTemplate.findById(id, Collaborator.class, "collaborator");
+    }
+
+    @Override
+    public List<Collaborator> getCollaboratorByGroupId(String databaseName, String groupId) {
+        MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
+        Query query = new Query(Criteria.where("groupId").is(groupId));
+        return mongoTemplate.find(query, Collaborator.class, "collaborator");
+    }
+
+    @Override
+    public Map<String, Long> getCreationDatesHistogram(String databaseName) {
+        MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
+        List<Collaborator> collaborators = mongoTemplate.findAll(Collaborator.class, "collaborator");
 
         return collaborators.stream()
                 .map(Collaborator::getId)
-                .filter(Objects::nonNull) // Vérification simplifiée
+                .filter(Objects::nonNull)
                 .map(id -> {
                     if (id instanceof ObjectId) {
                         return ((ObjectId) id).getTimestamp();
@@ -43,54 +64,32 @@ public class CollaboratorServiceImpl  implements CollaboratorService {
                 .map(timestamp -> Instant.ofEpochSecond(timestamp).atZone(ZoneId.systemDefault()).toLocalDate())
                 .map(date -> {
                     int year = date.getYear();
-                    int quarter = (date.getMonthValue() - 1) / 3 + 1; // Convertir mois en trimestre
-                    return year + "-T" + quarter; // Format "2025-T1"
+                    int quarter = (date.getMonthValue() - 1) / 3 + 1;
+                    return year + "-T" + quarter;
                 })
                 .collect(Collectors.groupingBy(q -> q, Collectors.counting()));
     }
 
-    public CollaboratorServiceImpl(CollaboratorDao collaboratorDao) {
-        this.collaboratorDao = collaboratorDao;
-    }
-
     @Override
-    public List<Collaborator> getAllCollaborators() {
-        return collaboratorDao.findAll();
-    }
+    public Map<String, Long> countByField(String databaseName, String fieldName) {
+        MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
 
-
-    @Override
-    public Collaborator getCollaboratorById(String id) {
-        return collaboratorDao.findById(id);
-    }
-
-    @Override
-    public List<Collaborator> getCollaboratorByGroupId(String groupId) {
-        return collaboratorDao.findByGroupId(groupId);
-    }
-    @Override
-    public Map<String, Long> countByField(String fieldName) {
-        // Utilisation de AggregationExpression pour injecter une expression MongoDB
         AggregationExpression ifNullExpression = context -> new org.bson.Document(
                 "$ifNull",
                 Arrays.asList("$" + fieldName, false)
         );
 
-        // Étape 1 : Projection
         ProjectionOperation project = Aggregation.project()
                 .and(ifNullExpression).as("fieldValue");
 
-        // Étape 2 : Groupement par la valeur projetée
         GroupOperation group = Aggregation.group("fieldValue").count().as("count");
 
-        // Étape 3 : Agrégation
         Aggregation aggregation = Aggregation.newAggregation(project, group);
 
         AggregationResults<org.bson.Document> results = mongoTemplate.aggregate(
-                aggregation, "collaborateurs", org.bson.Document.class
+                aggregation, "collaborator", org.bson.Document.class
         );
 
-        // Étape 4 : Mapping des résultats
         Map<String, Long> response = new HashMap<>();
         for (org.bson.Document doc : results) {
             Object key = doc.get("_id");
@@ -104,69 +103,58 @@ public class CollaboratorServiceImpl  implements CollaboratorService {
     }
 
     @Override
-    public List<Collaborator> getCollaboratorIsAdmin() {
-        // Création d'une Query avec un critère où isAdmin est true
-        Query query = new Query();
-        query.addCriteria(Criteria.where("isAdmin").is(true));
-        return mongoTemplate.find(query, Collaborator.class);
+    public List<Collaborator> getCollaboratorIsAdmin(String databaseName) {
+        MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
+        Query query = new Query(Criteria.where("isAdmin").is(true));
+        return mongoTemplate.find(query, Collaborator.class, "collaborator");
     }
-    @Override
-    public List<Collaborator> getCollaboratorIsAdminFalse() {
-        // Création d'une Query avec un critère où isAdmin est false ou non défini
-        Query query = new Query();
 
-        // Utilisation de orOperator pour combiner les critères
+    @Override
+    public List<Collaborator> getCollaboratorIsAdminFalse(String databaseName) {
+        MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
+        Query query = new Query();
         query.addCriteria(new Criteria().orOperator(
-                Criteria.where("isAdmin").is(false),  // Cherche où isAdmin est false
-                Criteria.where("isAdmin").exists(false)  // Cherche où isAdmin n'existe pas
+                Criteria.where("isAdmin").is(false),
+                Criteria.where("isAdmin").exists(false)
         ));
-
-        // Exécution de la requête et récupération des résultats
-        return mongoTemplate.find(query, Collaborator.class);
+        return mongoTemplate.find(query, Collaborator.class, "collaborator");
     }
 
     @Override
-    public List<Collaborator> getCollaboratoronline() {
-        // Création d'une Query avec un critère où onLine est true
-        Query query = new Query();
-        query.addCriteria(Criteria.where("onLine").is(true));
-
-        // Exécution de la requête et récupération des résultats
-        return mongoTemplate.find(query, Collaborator.class);
+    public List<Collaborator> getCollaboratoronline(String databaseName) {
+        MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
+        Query query = new Query(Criteria.where("onLine").is(true));
+        return mongoTemplate.find(query, Collaborator.class, "collaborator");
     }
-    @Override
-    public List<Collaborator> getCollaboratoroffline() {
-        // Création d'une Query avec un critère où onLine est false ou non défini
-        Query query = new Query();
 
-        // Utilisation de orOperator pour combiner les critères
+    @Override
+    public List<Collaborator> getCollaboratoroffline(String databaseName) {
+        MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
+        Query query = new Query();
         query.addCriteria(new Criteria().orOperator(
-                Criteria.where("onLine").is(false),  // Cherche où onLine est false
-                Criteria.where("onLine").exists(false)  // Cherche où onLine n'existe pas
+                Criteria.where("onLine").is(false),
+                Criteria.where("onLine").exists(false)
         ));
-
-        // Exécution de la requête et récupération des résultats
-        return mongoTemplate.find(query, Collaborator.class);
+        return mongoTemplate.find(query, Collaborator.class, "collaborator");
     }
-    @Override
-    public Boolean getCollaboratorDeletedStatus(String collaboratorId) {
-        Collaborator collaborator = collaboratorDao.findById(collaboratorId);
 
+    @Override
+    public Boolean getCollaboratorDeletedStatus(String databaseName, String collaboratorId) {
+        MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
+        Collaborator collaborator = mongoTemplate.findById(collaboratorId, Collaborator.class, "collaborator");
         if (collaborator == null) {
             return null;
         }
-
         return (collaborator.getDeleted() != null) ? collaborator.getDeleted() : true;
     }
+
     @Override
-    public List<Collaborator> searchByFullnameRegexIgnoreCase(String fullname) {
+    public List<Collaborator> searchByFullnameRegexIgnoreCase(String databaseName, String fullname) {
         if (fullname == null || fullname.trim().isEmpty()) {
             throw new IllegalArgumentException("Le nom ne peut pas être vide ou null");
         }
-        return collaboratorDao.searchByFullnameRegexIgnoreCase(fullname.trim());
+        MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
+        Query query = new Query(Criteria.where("fullname").regex(fullname.trim(), "i"));
+        return mongoTemplate.find(query, Collaborator.class, "collaborator");
     }
-
-
-
-
 }
