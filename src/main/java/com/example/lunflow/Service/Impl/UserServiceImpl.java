@@ -103,6 +103,7 @@ public class UserServiceImpl implements UserService {
         MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
         List<User> users = mongoTemplate.findAll(User.class, "user");
         List<String> creationDates = users.stream()
+                .filter(user -> user.getCreationDate() != null) // Skip users with null creation dates
                 .map(user -> user.getCreationDate().toString())
                 .collect(Collectors.toList());
         System.out.println("UserServiceImpl: Fetched " + creationDates.size() + " creation dates from database '" + databaseName + "'");
