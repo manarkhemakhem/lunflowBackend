@@ -1,5 +1,6 @@
 package com.example.lunflow.DataBases;
 
+import com.example.lunflow.ValueType;
 import com.example.lunflow.dao.Model.Collaborator;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -61,16 +62,16 @@ public class MongoDatabaseController {
                     "Erreur lors de la récupération des données : " + e.getMessage());
         }
     }
-    @GetMapping("/fields")
-    public ResponseEntity<List<String>> getCollaborateurFieldNames() {
-        try {
-            // Appeler la méthode dans MongoDataBaseConfig pour obtenir les noms des champs
-            List<String> fieldNames = mongoDataBaseConfig.getFieldNames(Collaborator.class);
-            return ResponseEntity.ok(fieldNames);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(null);
-        }
-    }
+//    @GetMapping("/fields")
+//    public ResponseEntity<List<String>> getCollaborateurFieldNames() {
+//        try {
+//            // Appeler la méthode dans MongoDataBaseConfig pour obtenir les noms des champs
+//            List<String> fieldNames = mongoDataBaseConfig.getFieldNames(Collaborator.class);
+//            return ResponseEntity.ok(fieldNames);
+//        } catch (Exception e) {
+//            return ResponseEntity.badRequest().body(null);
+//        }
+//    }
 
     // Endpoint pour filtrer les données par champ
     @GetMapping("/{databaseName}/filter")
@@ -87,7 +88,7 @@ public class MongoDatabaseController {
                         "Base de données non trouvée : " + databaseName);
             }
 
-            List<?> data = mongoDataBaseConfig.filterByField(databaseName, collection, field, operator, value); // <- modifié
+            List<?> data = mongoDataBaseConfig.filterByValueType(databaseName, collection, field, operator,new ValueType()); // <- modifié
             return ResponseEntity.ok(data);
 
         } catch (IllegalArgumentException e) {

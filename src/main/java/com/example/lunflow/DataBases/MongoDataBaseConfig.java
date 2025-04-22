@@ -1,5 +1,6 @@
 package com.example.lunflow.DataBases;
 
+import com.example.lunflow.ValueType;
 import com.example.lunflow.dao.Model.Collaborator;
 import com.example.lunflow.dao.Model.Group;
 import com.example.lunflow.dao.Model.User;
@@ -147,38 +148,47 @@ public class MongoDataBaseConfig {
         return dynamicTemplate.findAll(clazz, collectionName);
     }
 
-    // Filtre les données par champ
-    public List<?> filterByField(String databaseName, String collection, String field, String operator, String value) {
+    public List<?> filterByValueType(String databaseName, String collection, String field, String operator, ValueType valueType) {
         MongoTemplate mongoTemplate = getMongoTemplateForDatabase(databaseName);
 
         Criteria criteria;
 
-        switch (operator.toLowerCase()) {
-            case "equals":
-                criteria = Criteria.where(field).is(value);
-                break;
-            case "notequals":
-                criteria = Criteria.where(field).ne(value);
-                break;
-            case "contains":
-                criteria = Criteria.where(field).regex(value, "i"); // ignore case
-                break;
-            case "notcontains":
-                criteria = Criteria.where(field).not().regex(value, "i");
-                break;
-            case "startswith":
-                criteria = Criteria.where(field).regex("^" + value, "i");
-                break;
-            case "endswith":
-                criteria = Criteria.where(field).regex(value + "$", "i");
-                break;
-            default:
-                throw new IllegalArgumentException("Opérateur non supporté : " + operator);
+        if (valueType.getStringValue() != null) {
+            String val = valueType.getStringValue();
+            switch (operator.toLowerCase()) {
+                case "equals" -> criteria = Criteria.where(field).is(val);
+                case "notequals" -> criteria = Criteria.where(field).ne(val);
+                case "contains" -> criteria = Criteria.where(field).regex(val, "i");
+                case "notcontains" -> criteria = Criteria.where(field).not().regex(val, "i");
+                case "startswith" -> criteria = Criteria.where(field).regex("^" + val, "i");
+                case "endswith" -> criteria = Criteria.where(field).regex(val + "$", "i");
+                default -> throw new IllegalArgumentException("Opérateur non supporté pour String : " + operator);
+            }
+        }
+        else if (valueType.getBoolValue() != null) {
+            Boolean val = valueType.getBoolValue();
+            switch (operator.toLowerCase()) {
+                case "equals" -> criteria = Criteria.where(field).is(val);
+                case "notequals" -> criteria = Criteria.where(field).ne(val);
+                default -> throw new IllegalArgumentException("Opérateur non supporté pour Boolean : " + operator);
+            }
+        }
+        else if (valueType.getIntValue() != null) {
+            Integer val = valueType.getIntValue();
+            switch (operator.toLowerCase()) {
+                case "equals" -> criteria = Criteria.where(field).is(val);
+                case "notequals" -> criteria = Criteria.where(field).ne(val);
+                default -> throw new IllegalArgumentException("Opérateur non supporté pour Integer : " + operator);
+            }
+        }
+        else {
+            throw new IllegalArgumentException("Aucune valeur détectée dans ValueType.");
         }
 
         Query query = new Query(criteria);
-        return mongoTemplate.find(query, Map.class, collection); // Map.class pour des documents génériques
+        return mongoTemplate.find(query, Map.class, collection);
     }
+
     public List<String> getFieldNames(Class<?> clazz) {
         Field[] fields = clazz.getDeclaredFields();
         return Arrays.stream(fields)
