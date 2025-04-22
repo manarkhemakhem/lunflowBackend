@@ -61,6 +61,16 @@ public class MongoDatabaseController {
                     "Erreur lors de la récupération des données : " + e.getMessage());
         }
     }
+    @GetMapping("/fields")
+    public ResponseEntity<List<String>> getCollaborateurFieldNames() {
+        try {
+            // Appeler la méthode dans MongoDataBaseConfig pour obtenir les noms des champs
+            List<String> fieldNames = mongoDataBaseConfig.getFieldNames(Collaborator.class);
+            return ResponseEntity.ok(fieldNames);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
 
     // Endpoint pour filtrer les données par champ
     @GetMapping("/{databaseName}/filter")

@@ -17,10 +17,13 @@ import org.springframework.data.mongodb.core.query.Query;
 
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Configuration
 public class MongoDataBaseConfig {
@@ -176,9 +179,12 @@ public class MongoDataBaseConfig {
         Query query = new Query(criteria);
         return mongoTemplate.find(query, Map.class, collection); // Map.class pour des documents génériques
     }
-
-
-    // Mappe une collection à une classe
+    public List<String> getFieldNames(Class<?> clazz) {
+        Field[] fields = clazz.getDeclaredFields();
+        return Arrays.stream(fields)
+                .map(Field::getName)
+                .collect(Collectors.toList());
+    }
     private Class<?> getClassForCollection(String collectionName) {
         return switch (collectionName.toLowerCase()) {
             case "collaborator" -> Collaborator.class;
