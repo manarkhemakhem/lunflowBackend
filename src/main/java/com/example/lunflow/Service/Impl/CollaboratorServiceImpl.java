@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -26,6 +27,7 @@ public class CollaboratorServiceImpl implements CollaboratorService {
     public CollaboratorServiceImpl(MongoDataBaseConfig mongoDataBaseConfig) {
         this.mongoDataBaseConfig = mongoDataBaseConfig;
     }
+    private MongoTemplate mongoTemplate;
 
     @Override
     public List<Collaborator> getAllCollaborators(String databaseName) {
@@ -157,4 +159,55 @@ public class CollaboratorServiceImpl implements CollaboratorService {
         Query query = new Query(Criteria.where("fullname").regex(fullname.trim(), "i"));
         return mongoTemplate.find(query, Collaborator.class, "collaborator");
     }
+//    public List<Collaborator> filterDynamic(String field, String operator, String valueStr) {
+//        Criteria criteria;
+//
+//        // Tentative de conversion en nombre ou date
+//        Object value = parseValue(valueStr);
+//
+//        switch (operator.toLowerCase()) {
+//            case "equals":
+//                criteria = Criteria.where(field).is(value);
+//                break;
+//            case "not equals":
+//                criteria = Criteria.where(field).ne(value);
+//                break;
+//            case "contains":criteria = Criteria.where(field).regex(".*" + valueStr + ".*", "i");
+//                break;
+//
+//            case "starts with":
+//                criteria = Criteria.where(field).regex("^" + valueStr, "i");
+//                break;
+//            case "ends with":
+//                criteria = Criteria.where(field).regex(valueStr + "$", "i");
+//                break;
+//            case "greater than":
+//                criteria = Criteria.where(field).gt(value);
+//                break;
+//            case "less than":
+//                criteria = Criteria.where(field).lt(value);
+//                break;
+//            default:
+//                throw new IllegalArgumentException("Unsupported operator: " + operator);
+//        }
+
+//        Query query = new Query(criteria);
+//        return mongoTemplate.find(query, Collaborator.class);
+//    }
+
+//    private Object parseValue(String valueStr) {
+//        // Tentative de conversion nombre
+//        try {
+//            return Integer.parseInt(valueStr);
+//        } catch (NumberFormatException ignored) {}
+//
+//        // Tentative de conversion date
+//        try {
+//            return new SimpleDateFormat("yyyy-MM-dd").parse(valueStr);
+//        } catch (Exception ignored) {}
+//
+//        // Sinon on retourne la chaîne brute
+//        return valueStr;
+//    }
+
 }

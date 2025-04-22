@@ -145,17 +145,38 @@ public class MongoDataBaseConfig {
     }
 
     // Filtre les données par champ
-    public List<?> filterByField(String dbName, String collection, String field, String value) {
-        MongoTemplate template = getMongoTemplateForDatabase(dbName);
-        Class<?> clazz = getClassForCollection(collection);
+    public List<?> filterByField(String databaseName, String collection, String field, String operator, String value) {
+        MongoTemplate mongoTemplate = getMongoTemplateForDatabase(databaseName);
 
-        Query query = new Query();
-        Object typedValue = value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")
-                ? Boolean.parseBoolean(value)
-                : value;
-        query.addCriteria(Criteria.where(field).is(typedValue));
-        return template.find(query, clazz, collection);
+        Criteria criteria;
+
+        switch (operator.toLowerCase()) {
+            case "equals":
+                criteria = Criteria.where(field).is(value);
+                break;
+            case "notequals":
+                criteria = Criteria.where(field).ne(value);
+                break;
+            case "contains":
+                criteria = Criteria.where(field).regex(value, "i"); // ignore case
+                break;
+            case "notcontains":
+                criteria = Criteria.where(field).not().regex(value, "i");
+                break;
+            case "startswith":
+                criteria = Criteria.where(field).regex("^" + value, "i");
+                break;
+            case "endswith":
+                criteria = Criteria.where(field).regex(value + "$", "i");
+                break;
+            default:
+                throw new IllegalArgumentException("Opérateur non supporté : " + operator);
+        }
+
+        Query query = new Query(criteria);
+        return mongoTemplate.find(query, Map.class, collection); // Map.class pour des documents génériques
     }
+
 
     // Mappe une collection à une classe
     private Class<?> getClassForCollection(String collectionName) {

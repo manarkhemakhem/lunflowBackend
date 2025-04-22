@@ -68,18 +68,18 @@ public class MongoDatabaseController {
             @PathVariable String databaseName,
             @RequestParam String collection,
             @RequestParam String field,
+            @RequestParam String operator,
             @RequestParam String value) {
         try {
-            // Vérifie si la base de données existe
             MongoDataBaseConfig.Database database = mongoDataBaseConfig.findDatabaseByName(databaseName);
             if (database == null) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Base de données non trouvée : " + databaseName);
             }
 
-            // Filtre les données
-            List<?> data = mongoDataBaseConfig.filterByField(databaseName, collection, field, value);
+            List<?> data = mongoDataBaseConfig.filterByField(databaseName, collection, field, operator, value); // <- modifié
             return ResponseEntity.ok(data);
+
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Collection ou champ invalide : " + e.getMessage());

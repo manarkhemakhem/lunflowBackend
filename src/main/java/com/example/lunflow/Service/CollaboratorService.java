@@ -17,4 +17,5 @@ public interface CollaboratorService {
     List<Collaborator> getCollaboratoroffline(String databaseName);
     Boolean getCollaboratorDeletedStatus(String databaseName, String collaboratorId);
     List<Collaborator> searchByFullnameRegexIgnoreCase(String databaseName, String fullname);
+//    List<Collaborator> filterDynamic(String field, String operator, String valueStr);
 }
