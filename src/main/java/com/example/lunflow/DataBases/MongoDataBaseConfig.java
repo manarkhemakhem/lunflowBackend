@@ -19,10 +19,8 @@ import org.springframework.data.mongodb.core.query.Query;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -164,31 +162,35 @@ public class MongoDataBaseConfig {
                 case "endswith" -> criteria = Criteria.where(field).regex(val + "$", "i");
                 default -> throw new IllegalArgumentException("Opérateur non supporté pour String : " + operator);
             }
-        }
-        else if (valueType.getBoolValue() != null) {
+        } else if (valueType.getBoolValue() != null) {
             Boolean val = valueType.getBoolValue();
             switch (operator.toLowerCase()) {
                 case "equals" -> criteria = Criteria.where(field).is(val);
                 case "notequals" -> criteria = Criteria.where(field).ne(val);
                 default -> throw new IllegalArgumentException("Opérateur non supporté pour Boolean : " + operator);
             }
-        }
-        else if (valueType.getIntValue() != null) {
+        } else if (valueType.getIntValue() != null) {
             Integer val = valueType.getIntValue();
             switch (operator.toLowerCase()) {
                 case "equals" -> criteria = Criteria.where(field).is(val);
                 case "notequals" -> criteria = Criteria.where(field).ne(val);
                 default -> throw new IllegalArgumentException("Opérateur non supporté pour Integer : " + operator);
             }
-        }
-        else {
+        } else if (valueType.getDateValue() != null) {
+            LocalDateTime val = valueType.getDateValue();
+            switch (operator.toLowerCase()) {
+                case "equals" -> criteria = Criteria.where(field).is(val);
+                case "greaterthan" -> criteria = Criteria.where(field).gt(val);
+                case "lessthan" -> criteria = Criteria.where(field).lt(val);
+                default -> throw new IllegalArgumentException("Opérateur non supporté pour LocalDateTime : " + operator);
+            }
+        } else {
             throw new IllegalArgumentException("Aucune valeur détectée dans ValueType.");
         }
 
         Query query = new Query(criteria);
         return mongoTemplate.find(query, Map.class, collection);
     }
-
     public List<String> getFieldNames(Class<?> clazz) {
         Field[] fields = clazz.getDeclaredFields();
         return Arrays.stream(fields)
