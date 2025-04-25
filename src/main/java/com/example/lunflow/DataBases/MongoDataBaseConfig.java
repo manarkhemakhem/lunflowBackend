@@ -185,7 +185,13 @@ public class MongoDataBaseConfig {
         } else if (valueType.getInstantValue() != null) {
             Instant val = valueType.getInstantValue();
             switch (operator.toLowerCase()) {
-                case "equals" -> criteria = Criteria.where(field).is(Date.from(val));
+                case "equals" -> {
+                    ZonedDateTime start = val.atZone(ZoneOffset.UTC).truncatedTo(ChronoUnit.DAYS);
+                    ZonedDateTime end = start.plusDays(1);
+                    criteria = Criteria.where(field)
+                            .gte(Date.from(start.toInstant()))
+                            .lt(Date.from(end.toInstant()));
+                }
                 case "greaterthan" -> criteria = Criteria.where(field).gt(Date.from(val));
                 case "lessthan" -> criteria = Criteria.where(field).lt(Date.from(val));
                 case "eqyear" -> {
