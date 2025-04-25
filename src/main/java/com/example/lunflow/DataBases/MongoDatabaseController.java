@@ -101,15 +101,28 @@ public class MongoDatabaseController {
                         "Base de données non trouvée : " + databaseName);
             }
 
-            // Determine the field type and create ValueType
             Class<?> clazz = getClassForCollection(collection);
+            System.out.println("Classe déterminée pour la collection '" + collection + "' : " + clazz.getName());
+
             Field fieldObj = clazz.getDeclaredField(field);
+            System.out.println("Champ recherché : " + field);
+
             Class<?> fieldType = fieldObj.getType();
-            ValueType valueType = createValueType(value, fieldType, operator);
+            System.out.println("Type détecté pour le champ '" + field + "' : " + fieldType.getName());
+
+            System.out.println("Valeur fournie : " + value);
+            System.out.println("Opérateur choisi : " + operator);
+
+            ValueType valueType = mongoDataBaseConfig.createValueType(value, fieldType, operator);
+            System.out.println("ValueType créé : " + valueType);
+
+            System.out.println("Base de données sélectionnée : " + databaseName);
+            System.out.println("Collection ciblée : " + collection);
 
             List<?> data = mongoDataBaseConfig.filterByValueType(databaseName, collection, field, operator, valueType);
-            return ResponseEntity.ok(data);
+            System.out.println("Données filtrées retournées : " + data);
 
+            return ResponseEntity.ok(data);
         } catch (NoSuchFieldException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Champ invalide : " + field);
@@ -122,56 +135,7 @@ public class MongoDatabaseController {
         }
     }
 
-    // Helper method to create ValueType based on field type and value
-    private ValueType createValueType(String value, Class<?> fieldType, String operator) {
-        ValueType valueType = new ValueType();
 
-        if (fieldType == String.class) {
-            if (!List.of("equals", "notequals", "contains", "notcontains", "startswith", "endswith")
-                    .contains(operator.toLowerCase())) {
-                throw new IllegalArgumentException("Opérateur non supporté pour String : " + operator);
-            }
-            valueType.setStringValue(value);
-        } else if (fieldType == Boolean.class || fieldType == boolean.class) {
-            if (!List.of("equals", "notequals").contains(operator.toLowerCase())) {
-                throw new IllegalArgumentException("Opérateur non supporté pour Boolean : " + operator);
-            }
-            try {
-                valueType.setBoolValue(Boolean.parseBoolean(value));
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Valeur invalide pour Boolean : " + value);
-            }
-        } else if (fieldType == Integer.class || fieldType == int.class) {
-            if (!List.of("equals", "notequals").contains(operator.toLowerCase())) {
-                throw new IllegalArgumentException("Opérateur non supporté pour Integer : " + operator);
-            }
-            try {
-                valueType.setIntValue(Integer.parseInt(value));
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Valeur invalide pour Integer : " + value);
-            }
-        } else if (fieldType == LocalDateTime.class) {
-            try {
-                LocalDateTime parsedDate;
-                if (value.matches("\\d{4}")) {
-                    parsedDate = LocalDateTime.parse(value + "-01-01T00:00:00");
-                } else {
-                    DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
-                    parsedDate = LocalDateTime.parse(value, formatter);
-                }
-                valueType.setDateValue(parsedDate);
-            } catch (DateTimeParseException e) {
-                throw new IllegalArgumentException("Valeur invalide pour LocalDateTime : " + value);
-            }
-
-        } else {
-            throw new IllegalArgumentException("Type de champ non supporté : " + fieldType.getSimpleName());
-        }
-
-        return valueType;
-    }
-
-    // Helper method to get the class for a collection
     private Class<?> getClassForCollection(String collectionName) {
         return switch (collectionName.toLowerCase()) {
             case "collaborator" -> Collaborator.class;

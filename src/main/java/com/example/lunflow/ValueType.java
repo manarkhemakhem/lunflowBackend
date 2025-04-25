@@ -2,20 +2,31 @@ package com.example.lunflow;
 
 import lombok.Data;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Date;
 
 @Data
 public class ValueType {
-    String StringValue;
+    String stringValue;
     Integer intValue;
     Boolean boolValue;
     LocalDateTime dateValue;
+    private Instant instantValue;
+
 
     public ValueType() {}
 
     public ValueType(String StringValue) {
-        this.StringValue = StringValue;
+        this.stringValue = StringValue;
+    }
+
+    public Instant getInstantValue() {
+        return instantValue;
+    }
+
+    public void setInstantValue(Instant instantValue) {
+        this.instantValue = instantValue;
     }
 
     public ValueType(Boolean boolValue) {
@@ -31,11 +42,11 @@ public class ValueType {
     }
 
     public String getStringValue() {
-        return StringValue;
+        return stringValue;
     }
 
     public void setStringValue(String StringValue) {
-        this.StringValue = StringValue;
+        this.stringValue = StringValue;
     }
 
     public Boolean getBoolValue() {
@@ -60,5 +71,15 @@ public class ValueType {
 
     public void setDateValue(LocalDateTime dateValue) {
         this.dateValue = dateValue;
+    }
+    @Override
+    public String toString() {
+        return "ValueType{" +
+                "StringValue='" + stringValue + '\'' +
+                ", intValue=" + intValue +
+                ", boolValue=" + boolValue +
+                ", dateValue=" + dateValue +
+                ", instantValue=" + instantValue +
+                '}';
     }
 }
