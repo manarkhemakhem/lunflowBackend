@@ -194,7 +194,7 @@ public class MongoDataBaseConfig {
                 }
                 case "greaterthan" -> criteria = Criteria.where(field).gt(Date.from(val));
                 case "lessthan" -> criteria = Criteria.where(field).lt(Date.from(val));
-                case "eqyear" -> {
+                case "equalsyear" -> {
                     ZonedDateTime start = val.atZone(ZoneOffset.UTC).withDayOfYear(1).truncatedTo(ChronoUnit.DAYS);
                     ZonedDateTime end = start.plusYears(1);
                     criteria = Criteria.where(field)
@@ -274,12 +274,12 @@ public class MongoDataBaseConfig {
             }
 
         } else if (fieldType == LocalDateTime.class) {
-            if (!List.of("equals", "notequals", "greaterthan", "lessthan", "year")
+            if (!List.of("equals", "notequals", "greaterthan", "lessthan", "equalsyear")
                     .contains(operator.toLowerCase())) {
                 throw new IllegalArgumentException("Opérateur non supporté pour LocalDateTime : " + operator);
             }
             try {
-                if (operator.equalsIgnoreCase("year")) {
+                if (operator.equalsIgnoreCase("equalsyear")) {
                     int year = Integer.parseInt(value);
                     LocalDateTime start = LocalDateTime.of(year, 1, 1, 0, 0);
                     valueType.setDateValue(start);
