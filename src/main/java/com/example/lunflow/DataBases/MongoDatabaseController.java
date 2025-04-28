@@ -91,7 +91,7 @@ public class MongoDatabaseController {
     public ResponseEntity<List<?>> filterByField(
             @PathVariable String databaseName,
             @RequestParam String collection,
-            @RequestParam String field,
+            @RequestParam String field ,
             @RequestParam String operator,
             @RequestParam String value) {
         try {
