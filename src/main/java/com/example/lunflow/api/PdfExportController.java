@@ -7,7 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
+@CrossOrigin("*")
 @RestController
 @RequestMapping("/export")
 public class PdfExportController {
@@ -38,5 +38,4 @@ public class PdfExportController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
 }

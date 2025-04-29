@@ -35,7 +35,6 @@ public class PdfExportService {
                 document.add(img);
                 document.add(Chunk.NEWLINE);
             }
-
             // Contenu texte
             document.add(new Paragraph(content));
 
