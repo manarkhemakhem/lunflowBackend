@@ -1,6 +1,7 @@
 package com.example.lunflow.Service;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfWriter;
+
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
@@ -9,7 +10,7 @@ import java.io.ByteArrayOutputStream;
 @Service
 public class PdfExportService {
 
-    public ByteArrayInputStream exportPdf() {
+    public ByteArrayInputStream exportPdfFromContent(String content, String titleText) {
         try {
             Document document = new Document();
             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -17,13 +18,13 @@ public class PdfExportService {
             PdfWriter.getInstance(document, out);
             document.open();
 
-            // Exemple de contenu
             Font font = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
-            Paragraph title = new Paragraph("Mon premier PDF exporté avec Spring Boot", font);
+            Paragraph title = new Paragraph(titleText, font);
             title.setAlignment(Element.ALIGN_CENTER);
-
             document.add(title);
-            document.add(new Paragraph("Contenu du PDF ici..."));
+
+            document.add(Chunk.NEWLINE);
+            document.add(new Paragraph(content));
 
             document.close();
             return new ByteArrayInputStream(out.toByteArray());
@@ -31,4 +32,7 @@ public class PdfExportService {
             throw new RuntimeException("Erreur lors de la génération du PDF", e);
         }
     }
+
+
+
 }
