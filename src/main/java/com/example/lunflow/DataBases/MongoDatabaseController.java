@@ -8,6 +8,8 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,12 +17,12 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -86,6 +88,8 @@ public class MongoDatabaseController {
         }
     }
 
+
+
     // Endpoint pour filtrer les données par champ
     @GetMapping("/{databaseName}/filter")
     public ResponseEntity<List<?>> filterByField(
@@ -144,21 +148,108 @@ public class MongoDatabaseController {
             default -> throw new IllegalArgumentException("Collection inconnue : " + collectionName);
         };
     }
-    // Endpoint pour tester la connexion à une base de données
-    @GetMapping("/testConnection/{databaseName}")
-    public ResponseEntity<String> testConnection(@PathVariable String databaseName) {
-        MongoDataBaseConfig.Database database = mongoDataBaseConfig.findDatabaseByName(databaseName);
-        if (database == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Base de données non trouvée : " + databaseName);
-        }
 
-        boolean isConnected = mongoDataBaseConfig.testConnection(databaseName);
-        if (isConnected) {
-            return ResponseEntity.ok("Connexion à la base de données '" + databaseName + "' réussie.");
-        } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Échec de la connexion à la base de données '" + databaseName + "'.");
+
+    //**************************
+    // retourn les fields  celon la base souhaiter et la collection
+    @GetMapping("/fields")
+    public ResponseEntity<List<String>> getFields(
+            @RequestParam String databaseName,
+            @RequestParam String collection) {
+        try {
+            List<String> fields = mongoDataBaseConfig.getFields(databaseName, collection);
+            return ResponseEntity.ok(fields);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Erreur lors de la récupération des champs : " + e.getMessage());
         }
     }
+    @GetMapping("/filter-field")
+    public ResponseEntity<List<Object>> filterFieldValues(
+            @RequestParam String databaseName,
+            @RequestParam String collection,
+            @RequestParam String field,
+            @RequestParam(defaultValue = "false") boolean filter,
+            @RequestParam(required = false) String operator,
+            @RequestParam(required = false) String value) {
+        try {
+            MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
+
+            if (!filter) {
+                Query query = new Query();
+                query.fields().include(field);
+                List<Map> results = mongoTemplate.find(query, Map.class, collection);
+                List<Object> fieldValues = results.stream()
+                        .map(m -> m.get(field))
+                        .filter(Objects::nonNull)
+                        .toList();
+                return ResponseEntity.ok(fieldValues);
+            }
+
+            if (operator == null || value == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Opérateur et valeur requis si filter=true");
+            }
+
+            // Déduire dynamiquement le type du champ depuis un document existant
+            Object sample = mongoTemplate.findOne(new Query(), Map.class, collection);
+            if (sample == null || !((Map<?, ?>) sample).containsKey(field)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Champ inconnu ou collection vide : " + field);
+            }
+
+            Object exampleValue = ((Map<?, ?>) sample).get(field);
+            Object typedValue = convertToTypedValue(value, exampleValue);
+
+            Criteria criteria = switch (operator.toLowerCase()) {
+                case "eq" -> Criteria.where(field).is(typedValue);
+                case "ne" -> Criteria.where(field).ne(typedValue);
+                case "regex" -> Criteria.where(field).regex(value, "i");
+                case "in" -> {
+                    List<Object> values = Arrays.stream(value.split(","))
+                            .map(v -> convertToTypedValue(v, exampleValue))
+                            .toList();
+                    yield Criteria.where(field).in(values);
+                }
+                default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Opérateur non supporté");
+            };
+
+            Query query = new Query(criteria);
+            query.fields().include(field);
+            List<Map> results = mongoTemplate.find(query, Map.class, collection);
+            List<Object> filteredFieldValues = results.stream()
+                    .map(m -> m.get(field))
+                    .filter(Objects::nonNull)
+                    .toList();
+
+            return ResponseEntity.ok(filteredFieldValues);
+
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Erreur interne : " + e.getMessage());
+        }
+    }
+
+    // Méthode utilitaire pour convertir dynamiquement la valeur
+    private Object convertToTypedValue(String value, Object example) {
+        if (example instanceof Integer) {
+            return Integer.parseInt(value);
+        } else if (example instanceof Long) {
+            return Long.parseLong(value);
+        } else if (example instanceof Boolean) {
+            return Boolean.parseBoolean(value);
+        } else if (example instanceof Date) {
+            try {
+                return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").parse(value);
+            } catch (ParseException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Format de date invalide : " + value);
+            }
+        }
+        return value; // fallback String
+    }
+
+
 }

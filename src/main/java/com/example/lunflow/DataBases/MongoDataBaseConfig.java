@@ -146,6 +146,22 @@ public class MongoDataBaseConfig {
         Class<?> clazz = getClassForCollection(collectionName);
         return dynamicTemplate.findAll(clazz, collectionName);
     }
+    public List<String> getFields(String databaseName, String collection) {
+        MongoTemplate mongoTemplate = getMongoTemplateForDatabase(databaseName);
+
+        // Récupère quelques documents (ex: 100 max) pour explorer les champs
+        Query query = new Query().limit(100);
+        List<Map> documents = mongoTemplate.find(query, Map.class, collection);
+
+        // Set pour éviter les doublons de champs
+        Set<String> fieldNames = new HashSet<>();
+
+        for (Map doc : documents) {
+            fieldNames.addAll(doc.keySet());
+        }
+
+        return new ArrayList<>(fieldNames);
+    }
 
     public List<?> filterByValueType(String databaseName, String collection, String field, String operator, ValueType valueType) {
         MongoTemplate mongoTemplate = getMongoTemplateForDatabase(databaseName);

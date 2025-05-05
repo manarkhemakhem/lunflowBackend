@@ -1,4 +1,5 @@
 package com.example.lunflow.api;
+
 import com.example.lunflow.Service.Impl.PdfExportService;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -6,7 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+
 @CrossOrigin("*")
 @RestController
 @RequestMapping("/export")
@@ -18,24 +19,27 @@ public class PdfExportController {
         this.pdfExportService = pdfExportService;
     }
 
-    @PostMapping(value = "/pdf", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_PDF_VALUE)
-    public ResponseEntity<byte[]> exportPdfFromContent(
-            @RequestParam("content") String content,
+    @PostMapping(value = "/export", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<byte[]> exportToPdf(
             @RequestParam("title") String title,
-            @RequestParam(value = "image", required = false) MultipartFile image,
-            @RequestParam(defaultValue = "document") String filename) {
+            @RequestParam("content") String content,
+            @RequestParam("filename") String filename,
+            @RequestParam(value = "images", required = false) MultipartFile[] images) {
 
-        try (InputStream imageStream = (image != null && !image.isEmpty()) ? image.getInputStream() : null) {
+        try {
+            ByteArrayInputStream pdfStream = pdfExportService.exportPdfFromContent(title, content, images);
 
-            ByteArrayInputStream pdfStream = pdfExportService.exportPdfFromContent(content, title, imageStream);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
 
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + ".pdf\"")
-                    .contentType(MediaType.APPLICATION_PDF)
+                    .headers(headers)
                     .body(pdfStream.readAllBytes());
 
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 }
