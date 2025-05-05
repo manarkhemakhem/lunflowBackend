@@ -164,6 +164,7 @@ public class MongoDatabaseController {
                     "Erreur lors de la récupération des champs : " + e.getMessage());
         }
     }
+
     @GetMapping("/filter-field")
     public ResponseEntity<List<Object>> filterFieldValues(
             @RequestParam String databaseName,
@@ -171,11 +172,15 @@ public class MongoDatabaseController {
             @RequestParam String field,
             @RequestParam(defaultValue = "false") boolean filter,
             @RequestParam(required = false) String operator,
-            @RequestParam(required = false) String value) {
+            @RequestParam(required = false) String value,
+            @RequestParam(required = false) String filterField,
+            @RequestParam(required = false) String filterValue,
+            @RequestParam(required = false) String filterOperator) {  // Nouveau paramètre pour l'opérateur du filterField
         try {
             MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
 
             if (!filter) {
+                // Si le filtrage est désactivé, on renvoie tous les champs demandés
                 Query query = new Query();
                 query.fields().include(field);
                 List<Map> results = mongoTemplate.find(query, Map.class, collection);
@@ -186,70 +191,150 @@ public class MongoDatabaseController {
                 return ResponseEntity.ok(fieldValues);
             }
 
+            // Vérification des paramètres nécessaires pour le filtrage principal
             if (operator == null || value == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Opérateur et valeur requis si filter=true");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Opérateur et valeur requis si filter=true");
             }
 
-            // Déduire dynamiquement le type du champ depuis un document existant
             Object sample = mongoTemplate.findOne(new Query(), Map.class, collection);
             if (sample == null || !((Map<?, ?>) sample).containsKey(field)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Champ inconnu ou collection vide : " + field);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ inconnu ou collection vide : " + field);
             }
 
             Object exampleValue = ((Map<?, ?>) sample).get(field);
             Object typedValue = convertToTypedValue(value, exampleValue);
 
-            Criteria criteria = switch (operator.toLowerCase()) {
-                case "eq" -> Criteria.where(field).is(typedValue);
-                case "ne" -> Criteria.where(field).ne(typedValue);
-                case "regex" -> Criteria.where(field).regex(value, "i");
-                case "in" -> {
-                    List<Object> values = Arrays.stream(value.split(","))
-                            .map(v -> convertToTypedValue(v, exampleValue))
-                            .toList();
-                    yield Criteria.where(field).in(values);
+            Criteria mainCriteria;
+
+            // Filtrage spécifique pour les dates sur le champ principal
+            if (exampleValue instanceof Date) {
+                if (operator.equalsIgnoreCase("dateAfter")) {
+                    Date typedDate = (Date) typedValue;
+                    mainCriteria = Criteria.where(field).gt(typedDate);
+                } else if (operator.equalsIgnoreCase("dateBefore")) {
+                    Date typedDate = (Date) typedValue;
+                    mainCriteria = Criteria.where(field).lt(typedDate);
+                } else if (operator.equalsIgnoreCase("dateBetween")) {
+                    String[] dates = value.split(",");
+                    if (dates.length == 2) {
+                        Date startDate = new SimpleDateFormat("yyyy-MM-dd").parse(dates[0]);
+                        Date endDate = new SimpleDateFormat("yyyy-MM-dd").parse(dates[1]);
+                        mainCriteria = Criteria.where(field).gte(startDate).lte(endDate);
+                    } else {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Format dateBetween invalide : deux dates requises");
+                    }
+                } else {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Opérateur non supporté pour les dates");
                 }
-                default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Opérateur non supporté");
-            };
+            } else {
+                // Filtrage pour les autres types sur le champ principal
+                mainCriteria = switch (operator.toLowerCase()) {
+                    case "eq" -> Criteria.where(field).is(typedValue);
+                    case "ne" -> Criteria.where(field).ne(typedValue);
+                    case "regex" -> Criteria.where(field).regex(value, "i");
+                    case "in" -> {
+                        List<Object> values = Arrays.stream(value.split(","))
+                                .map(v -> convertToTypedValue(v, exampleValue))
+                                .toList();
+                        yield Criteria.where(field).in(values);
+                    }
+                    default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Opérateur non supporté");
+                };
+            }
 
-            Query query = new Query(criteria);
-            query.fields().include(field);
-            List<Map> results = mongoTemplate.find(query, Map.class, collection);
-            List<Object> filteredFieldValues = results.stream()
-                    .map(m -> m.get(field))
-                    .filter(Objects::nonNull)
-                    .toList();
+            // Gestion du filtre supplémentaire sur filterField
+            if (filterField != null && filterValue != null && filterOperator != null) {
+                if (!((Map<?, ?>) sample).containsKey(filterField)) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ de filtre inconnu : " + filterField);
+                }
 
-            return ResponseEntity.ok(filteredFieldValues);
+                Object filterExampleValue = ((Map<?, ?>) sample).get(filterField);
+                Object typedFilterValue = convertToTypedValue(filterValue, filterExampleValue);
+
+                Criteria filterCriteria;
+
+                // Filtrage spécifique pour les dates sur filterField
+                if (filterExampleValue instanceof Date) {
+                    if (filterOperator.equalsIgnoreCase("dateAfter")) {
+                        Date typedDate = (Date) typedFilterValue;
+                        filterCriteria = Criteria.where(filterField).gt(typedDate);
+                    } else if (filterOperator.equalsIgnoreCase("dateBefore")) {
+                        Date typedDate = (Date) typedFilterValue;
+                        filterCriteria = Criteria.where(filterField).lt(typedDate);
+                    } else if (filterOperator.equalsIgnoreCase("dateBetween")) {
+                        String[] dates = filterValue.split(",");
+                        if (dates.length == 2) {
+                            Date startDate = new SimpleDateFormat("yyyy-MM-dd").parse(dates[0]);
+                            Date endDate = new SimpleDateFormat("yyyy-MM-dd").parse(dates[1]);
+                            filterCriteria = Criteria.where(filterField).gte(startDate).lte(endDate);
+                        } else {
+                            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Format dateBetween invalide : deux dates requises");
+                        }
+                    } else {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Opérateur non supporté pour les dates");
+                    }
+                } else {
+                    // Filtrage pour les autres types sur filterField
+                    filterCriteria = switch (filterOperator.toLowerCase()) {
+                        case "eq" -> Criteria.where(filterField).is(typedFilterValue);
+                        case "ne" -> Criteria.where(filterField).ne(typedFilterValue);
+                        case "regex" -> Criteria.where(filterField).regex(filterValue, "i");
+                        case "in" -> {
+                            List<Object> values = Arrays.stream(filterValue.split(","))
+                                    .map(v -> convertToTypedValue(v, filterExampleValue))
+                                    .toList();
+                            yield Criteria.where(filterField).in(values);
+                        }
+                        default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Opérateur de filtre non supporté");
+                    };
+                }
+
+                // Combiner les critères avec un AND
+                mainCriteria = new Criteria().andOperator(mainCriteria, filterCriteria);
+            } else if (filterField != null || filterValue != null || filterOperator != null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "filterField, filterValue et filterOperator doivent tous être spécifiés");
+            }
+
+            // Retourne les résultats filtrés
+            return getFilteredResults(mongoTemplate, collection, field, mainCriteria);
 
         } catch (ResponseStatusException e) {
             throw e;
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Erreur interne : " + e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur interne : " + e.getMessage());
         }
     }
 
-    // Méthode utilitaire pour convertir dynamiquement la valeur
-    private Object convertToTypedValue(String value, Object example) {
-        if (example instanceof Integer) {
-            return Integer.parseInt(value);
-        } else if (example instanceof Long) {
-            return Long.parseLong(value);
-        } else if (example instanceof Boolean) {
-            return Boolean.parseBoolean(value);
-        } else if (example instanceof Date) {
-            try {
-                return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").parse(value);
-            } catch (ParseException e) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Format de date invalide : " + value);
-            }
-        }
-        return value; // fallback String
+    private ResponseEntity<List<Object>> getFilteredResults(MongoTemplate mongoTemplate, String collection, String field, Criteria criteria) {
+        Query query = new Query(criteria);
+        query.fields().include(field);
+        List<Map> results = mongoTemplate.find(query, Map.class, collection);
+        List<Object> filteredFieldValues = results.stream()
+                .map(m -> m.get(field))
+                .filter(Objects::nonNull)
+                .toList();
+        return ResponseEntity.ok(filteredFieldValues);
     }
+
+    private Object convertToTypedValue(String value, Object exampleValue) {
+        try {
+            if (exampleValue instanceof String) {
+                return value;
+            } else if (exampleValue instanceof Integer) {
+                return Integer.parseInt(value);
+            } else if (exampleValue instanceof Double) {
+                return Double.parseDouble(value);
+            } else if (exampleValue instanceof Boolean) {
+                return Boolean.parseBoolean(value);
+            } else if (exampleValue instanceof Date) {
+                return new SimpleDateFormat("yyyy-MM-dd").parse(value);
+            }
+            return value; // Fallback si le type n'est pas reconnu
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Valeur invalide pour le type du champ : " + value);
+        }
+    }
+
 
 
 }
