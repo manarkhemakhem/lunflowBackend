@@ -175,38 +175,40 @@ public class MongoDatabaseController {
             @RequestParam(required = false) String value,
             @RequestParam(required = false) String filterField,
             @RequestParam(required = false) String filterValue,
-            @RequestParam(required = false) String filterOperator) {  // Nouveau paramètre pour l'opérateur du filterField
+            @RequestParam(required = false) String filterOperator) {  // Opérateur pour le champ de filtre secondaire
         try {
+            // Récupération du MongoTemplate pour la base de données spécifiée dynamiquement
             MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
 
             if (!filter) {
-                // Si le filtrage est désactivé, on renvoie tous les champs demandés
+                // Si le filtrage est désactivé, récupérer tous les documents avec uniquement le champ demandé
                 Query query = new Query();
-                query.fields().include(field);
+                query.fields().include(field);  // Inclure uniquement le champ cible dans la projection
                 List<Map> results = mongoTemplate.find(query, Map.class, collection);
                 List<Object> fieldValues = results.stream()
-                        .map(m -> m.get(field))
-                        .filter(Objects::nonNull)
+                        .map(m -> m.get(field))       // Extraire la valeur du champ
+                        .filter(Objects::nonNull)     // Supprimer les nulls
                         .toList();
                 return ResponseEntity.ok(fieldValues);
             }
 
-            // Vérification des paramètres nécessaires pour le filtrage principal
+            // Validation : si filtrage actif, les paramètres 'operator' et 'value' sont obligatoires
             if (operator == null || value == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Opérateur et valeur requis si filter=true");
             }
 
+            // Récupérer un document pour déterminer le type de la valeur du champ à filtrer
             Object sample = mongoTemplate.findOne(new Query(), Map.class, collection);
             if (sample == null || !((Map<?, ?>) sample).containsKey(field)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ inconnu ou collection vide : " + field);
             }
 
             Object exampleValue = ((Map<?, ?>) sample).get(field);
-            Object typedValue = convertToTypedValue(value, exampleValue);
+            Object typedValue = convertToTypedValue(value, exampleValue);  // Conversion du type de valeur
 
             Criteria mainCriteria;
 
-            // Filtrage spécifique pour les dates sur le champ principal
+            // Traitement des filtres spécifiques pour les champs de type Date
             if (exampleValue instanceof Date) {
                 if (operator.equalsIgnoreCase("dateAfter")) {
                     Date typedDate = (Date) typedValue;
@@ -227,7 +229,7 @@ public class MongoDatabaseController {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Opérateur non supporté pour les dates");
                 }
             } else {
-                // Filtrage pour les autres types sur le champ principal
+                // Traitement des filtres généraux pour les types non-date (ex. String, Integer)
                 mainCriteria = switch (operator.toLowerCase()) {
                     case "eq" -> Criteria.where(field).is(typedValue);
                     case "ne" -> Criteria.where(field).ne(typedValue);
@@ -242,7 +244,7 @@ public class MongoDatabaseController {
                 };
             }
 
-            // Gestion du filtre supplémentaire sur filterField
+            // Si un filtre secondaire est fourni, on le construit
             if (filterField != null && filterValue != null && filterOperator != null) {
                 if (!((Map<?, ?>) sample).containsKey(filterField)) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ de filtre inconnu : " + filterField);
@@ -253,7 +255,7 @@ public class MongoDatabaseController {
 
                 Criteria filterCriteria;
 
-                // Filtrage spécifique pour les dates sur filterField
+                // Traitement des opérateurs spécifiques pour les dates sur le filtre secondaire
                 if (filterExampleValue instanceof Date) {
                     if (filterOperator.equalsIgnoreCase("dateAfter")) {
                         Date typedDate = (Date) typedFilterValue;
@@ -274,7 +276,7 @@ public class MongoDatabaseController {
                         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Opérateur non supporté pour les dates");
                     }
                 } else {
-                    // Filtrage pour les autres types sur filterField
+                    // Traitement des opérateurs généraux sur le filtre secondaire
                     filterCriteria = switch (filterOperator.toLowerCase()) {
                         case "eq" -> Criteria.where(filterField).is(typedFilterValue);
                         case "ne" -> Criteria.where(filterField).ne(typedFilterValue);
@@ -289,18 +291,22 @@ public class MongoDatabaseController {
                     };
                 }
 
-                // Combiner les critères avec un AND
+                // Combinaison des deux critères principaux et secondaires avec AND logique
                 mainCriteria = new Criteria().andOperator(mainCriteria, filterCriteria);
+
             } else if (filterField != null || filterValue != null || filterOperator != null) {
+                // Vérifie que les 3 éléments du filtre secondaire sont bien fournis ensemble
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "filterField, filterValue et filterOperator doivent tous être spécifiés");
             }
 
-            // Retourne les résultats filtrés
+            // Requête Mongo avec le critère final combiné (filtrage)
             return getFilteredResults(mongoTemplate, collection, field, mainCriteria);
 
         } catch (ResponseStatusException e) {
+            // Lève les erreurs HTTP prévues (400, etc.)
             throw e;
         } catch (Exception e) {
+            // Gestion des erreurs inattendues (ex : erreurs de parsing, connexion Mongo, etc.)
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur interne : " + e.getMessage());
         }
     }
