@@ -261,7 +261,7 @@ public class MongoDataBaseConfig {
         ValueType valueType = new ValueType();
 
         if (fieldType == String.class) {
-            if (!List.of("equals", "notequals", "contains", "notcontains", "startswith", "endswith")
+            if (!List.of("equals", "notequals", "contains", "notcontains", "startswith", "endswith", "regex")
                     .contains(operator.toLowerCase())) {
                 throw new IllegalArgumentException("Opérateur non supporté pour String : " + operator);
             }
@@ -271,14 +271,10 @@ public class MongoDataBaseConfig {
             if (!List.of("equals", "notequals").contains(operator.toLowerCase())) {
                 throw new IllegalArgumentException("Opérateur non supporté pour Boolean : " + operator);
             }
-            try {
-                valueType.setBoolValue(Boolean.parseBoolean(value));
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Valeur invalide pour Boolean : " + value);
-            }
+            valueType.setBoolValue(Boolean.parseBoolean(value));
 
         } else if (fieldType == Integer.class || fieldType == int.class) {
-            if (!List.of("equals", "notequals").contains(operator.toLowerCase())) {
+            if (!List.of("equals", "notequals", "greaterthan", "lessthan").contains(operator.toLowerCase())) {
                 throw new IllegalArgumentException("Opérateur non supporté pour Integer : " + operator);
             }
             try {
@@ -287,10 +283,10 @@ public class MongoDataBaseConfig {
                 throw new IllegalArgumentException("Valeur invalide pour Integer : " + value);
             }
 
-        } else if (fieldType == LocalDateTime.class) {
-            if (!List.of("equals", "notequals", "greaterthan", "lessthan", "equalsyear")
+        } else if (fieldType == LocalDateTime.class || fieldType == Instant.class || fieldType == Date.class) {
+            if (!List.of("equals", "notequals", "greaterthan", "lessthan", "equalsyear", "dateafter")
                     .contains(operator.toLowerCase())) {
-                throw new IllegalArgumentException("Opérateur non supporté pour LocalDateTime : " + operator);
+                throw new IllegalArgumentException("Opérateur non supporté pour Date : " + operator);
             }
             try {
                 if (operator.equalsIgnoreCase("equalsyear")) {
@@ -299,18 +295,20 @@ public class MongoDataBaseConfig {
                     valueType.setDateValue(start);
                     valueType.setInstantValue(start.atZone(ZoneOffset.UTC).toInstant());
                 } else {
-                    LocalDateTime parsedDate = parseLocalDateTime(value);
+                    LocalDateTime parsedDate = parseLocalDateTime(value); // à adapter si nécessaire
                     valueType.setDateValue(parsedDate);
-                    Instant instant = parsedDate.atZone(ZoneOffset.UTC).toInstant();
-                    valueType.setInstantValue(instant);
+                    valueType.setInstantValue(parsedDate.atZone(ZoneOffset.UTC).toInstant());
                 }
             } catch (Exception e) {
-                throw new IllegalArgumentException("Valeur invalide pour LocalDateTime : " + value);
+                throw new IllegalArgumentException("Valeur invalide pour Date/Instant : " + value);
             }
+        } else {
+            throw new IllegalArgumentException("Type de champ non supporté : " + fieldType.getSimpleName());
         }
 
         return valueType;
     }
+
 
     private LocalDateTime parseLocalDateTime(String value) throws DateTimeParseException {
         LocalDateTime parsedDate;
