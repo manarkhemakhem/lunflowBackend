@@ -1,6 +1,7 @@
 package com.example.lunflow;
 
 public class FilterField {
+
     private String field;     // Le nom du champ à filtrer
     private String operator;  // L'opérateur pour le filtrage
     private String value;     // La valeur associée au filtrage

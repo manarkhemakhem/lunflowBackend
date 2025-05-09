@@ -1,5 +1,7 @@
 package com.example.lunflow.DataBases;
 
+import com.example.lunflow.Filter;
+import com.example.lunflow.FilterRequest;
 import com.example.lunflow.ValueType;
 import com.example.lunflow.dao.Model.Collaborator;
 import com.example.lunflow.dao.Model.Group;
@@ -19,9 +21,13 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @CrossOrigin(origins = "*")
@@ -165,149 +171,100 @@ public class MongoDatabaseController {
         }
     }
 
-    @GetMapping("/filter-field")
-    public ResponseEntity<List<Object>> filterFieldValues(
-            @RequestParam String databaseName,
-            @RequestParam String collection,
-            @RequestParam String field,
-            @RequestParam(defaultValue = "false") boolean filter,
-            @RequestParam(required = false) String operator,
-            @RequestParam(required = false) String value,
-            @RequestParam(required = false) String filterField,
-            @RequestParam(required = false) String filterValue,
-            @RequestParam(required = false) String filterOperator) {  // Opérateur pour le champ de filtre secondaire
+    @PostMapping("/{databaseName}/{collection}/filter")
+    public ResponseEntity<List<?>> filterByFields(
+            @PathVariable String databaseName,
+            @PathVariable String collection,
+            @RequestBody List<Map<String, String>> filters) {
         try {
-            // Récupération du MongoTemplate pour la base de données spécifiée dynamiquement
+            MongoDataBaseConfig.Database database = mongoDataBaseConfig.findDatabaseByName(databaseName);
+            if (database == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Base de données non trouvée : " + databaseName);
+            }
+
             MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
+            Class<?> clazz = getClassForCollection(collection);
 
-            if (!filter) {
-                // Si le filtrage est désactivé, récupérer tous les documents avec uniquement le champ demandé
-                Query query = new Query();
-                query.fields().include(field);  // Inclure uniquement le champ cible dans la projection
-                List<Map> results = mongoTemplate.find(query, Map.class, collection);
-                List<Object> fieldValues = results.stream()
-                        .map(m -> m.get(field))       // Extraire la valeur du champ
-                        .filter(Objects::nonNull)     // Supprimer les nulls
-                        .toList();
-                return ResponseEntity.ok(fieldValues);
-            }
+            List<Criteria> criteriaList = new ArrayList<>();
+            for (Map<String, String> filter : filters) {
+                String field = filter.get("field");
+                String operator = filter.get("operator");
+                String value = filter.get("value");
 
-            // Validation : si filtrage actif, les paramètres 'operator' et 'value' sont obligatoires
-            if (operator == null || value == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Opérateur et valeur requis si filter=true");
-            }
+                Field fieldObj = clazz.getDeclaredField(field);
+                Class<?> fieldType = fieldObj.getType();
+                ValueType valueType = mongoDataBaseConfig.createValueType(value, fieldType, operator);
 
-            // Récupérer un document pour déterminer le type de la valeur du champ à filtrer
-            Object sample = mongoTemplate.findOne(new Query(), Map.class, collection);
-            if (sample == null || !((Map<?, ?>) sample).containsKey(field)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ inconnu ou collection vide : " + field);
-            }
-
-            Object exampleValue = ((Map<?, ?>) sample).get(field);
-            Object typedValue = convertToTypedValue(value, exampleValue);  // Conversion du type de valeur
-
-            Criteria mainCriteria;
-
-            // Traitement des filtres spécifiques pour les champs de type Date
-            if (exampleValue instanceof Date) {
-                if (operator.equalsIgnoreCase("dateAfter")) {
-                    Date typedDate = (Date) typedValue;
-                    mainCriteria = Criteria.where(field).gt(typedDate);
-                } else if (operator.equalsIgnoreCase("dateBefore")) {
-                    Date typedDate = (Date) typedValue;
-                    mainCriteria = Criteria.where(field).lt(typedDate);
-                } else if (operator.equalsIgnoreCase("dateBetween")) {
-                    String[] dates = value.split(",");
-                    if (dates.length == 2) {
-                        Date startDate = new SimpleDateFormat("yyyy-MM-dd").parse(dates[0]);
-                        Date endDate = new SimpleDateFormat("yyyy-MM-dd").parse(dates[1]);
-                        mainCriteria = Criteria.where(field).gte(startDate).lte(endDate);
-                    } else {
-                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Format dateBetween invalide : deux dates requises");
-                    }
-                } else {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Opérateur non supporté pour les dates");
-                }
-            } else {
-                // Traitement des filtres généraux pour les types non-date (ex. String, Integer)
-                mainCriteria = switch (operator.toLowerCase()) {
-                    case "eq" -> Criteria.where(field).is(typedValue);
-                    case "ne" -> Criteria.where(field).ne(typedValue);
-                    case "regex" -> Criteria.where(field).regex(value, "i");
-                    case "in" -> {
-                        List<Object> values = Arrays.stream(value.split(","))
-                                .map(v -> convertToTypedValue(v, exampleValue))
-                                .toList();
-                        yield Criteria.where(field).in(values);
-                    }
-                    default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Opérateur non supporté");
-                };
-            }
-
-            // Si un filtre secondaire est fourni, on le construit
-            if (filterField != null && filterValue != null && filterOperator != null) {
-                if (!((Map<?, ?>) sample).containsKey(filterField)) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ de filtre inconnu : " + filterField);
-                }
-
-                Object filterExampleValue = ((Map<?, ?>) sample).get(filterField);
-                Object typedFilterValue = convertToTypedValue(filterValue, filterExampleValue);
-
-                Criteria filterCriteria;
-
-                // Traitement des opérateurs spécifiques pour les dates sur le filtre secondaire
-                if (filterExampleValue instanceof Date) {
-                    if (filterOperator.equalsIgnoreCase("dateAfter")) {
-                        Date typedDate = (Date) typedFilterValue;
-                        filterCriteria = Criteria.where(filterField).gt(typedDate);
-                    } else if (filterOperator.equalsIgnoreCase("dateBefore")) {
-                        Date typedDate = (Date) typedFilterValue;
-                        filterCriteria = Criteria.where(filterField).lt(typedDate);
-                    } else if (filterOperator.equalsIgnoreCase("dateBetween")) {
-                        String[] dates = filterValue.split(",");
-                        if (dates.length == 2) {
-                            Date startDate = new SimpleDateFormat("yyyy-MM-dd").parse(dates[0]);
-                            Date endDate = new SimpleDateFormat("yyyy-MM-dd").parse(dates[1]);
-                            filterCriteria = Criteria.where(filterField).gte(startDate).lte(endDate);
-                        } else {
-                            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Format dateBetween invalide : deux dates requises");
-                        }
-                    } else {
-                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Opérateur non supporté pour les dates");
-                    }
-                } else {
-                    // Traitement des opérateurs généraux sur le filtre secondaire
-                    filterCriteria = switch (filterOperator.toLowerCase()) {
-                        case "eq" -> Criteria.where(filterField).is(typedFilterValue);
-                        case "ne" -> Criteria.where(filterField).ne(typedFilterValue);
-                        case "regex" -> Criteria.where(filterField).regex(filterValue, "i");
-                        case "in" -> {
-                            List<Object> values = Arrays.stream(filterValue.split(","))
-                                    .map(v -> convertToTypedValue(v, filterExampleValue))
-                                    .toList();
-                            yield Criteria.where(filterField).in(values);
-                        }
-                        default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Opérateur de filtre non supporté");
+                Criteria criteria;
+                if (valueType.getStringValue() != null) {
+                    String val = valueType.getStringValue();
+                    criteria = switch (operator.toLowerCase()) {
+                        case "equals" -> Criteria.where(field).is(val);
+                        case "notequals" -> Criteria.where(field).ne(val);
+                        case "contains" -> Criteria.where(field).regex(val, "i");
+                        case "notcontains" -> Criteria.where(field).not().regex(val, "i");
+                        case "startswith" -> Criteria.where(field).regex("^" + val, "i");
+                        case "endswith" -> Criteria.where(field).regex(val + "$", "i");
+                        case "regex" -> Criteria.where(field).regex(val, "i");
+                        default -> throw new IllegalArgumentException("Opérateur non supporté pour String : " + operator);
                     };
+                } else if (valueType.getBoolValue() != null) {
+                    Boolean val = valueType.getBoolValue();
+                    criteria = switch (operator.toLowerCase()) {
+                        case "equals" -> Criteria.where(field).is(val);
+                        case "notequals" -> Criteria.where(field).ne(val);
+                        default -> throw new IllegalArgumentException("Opérateur non supporté pour Boolean : " + operator);
+                    };
+                } else if (valueType.getIntValue() != null) {
+                    Integer val = valueType.getIntValue();
+                    criteria = switch (operator.toLowerCase()) {
+                        case "equals" -> Criteria.where(field).is(val);
+                        case "notequals" -> Criteria.where(field).ne(val);
+                        case "greaterthan" -> Criteria.where(field).gt(val);
+                        case "lessthan" -> Criteria.where(field).lt(val);
+                        default -> throw new IllegalArgumentException("Opérateur non supporté pour Integer : " + operator);
+                    };
+                } else if (valueType.getInstantValue() != null) {
+                    Instant val = valueType.getInstantValue();
+                    criteria = switch (operator.toLowerCase()) {
+                        case "equals" -> {
+                            ZonedDateTime start = val.atZone(ZoneOffset.UTC).truncatedTo(ChronoUnit.DAYS);
+                            ZonedDateTime end = start.plusDays(1);
+                            yield Criteria.where(field)
+                                    .gte(Date.from(start.toInstant()))
+                                    .lt(Date.from(end.toInstant()));
+                        }
+                        case "greaterthan" -> Criteria.where(field).gt(Date.from(val));
+                        case "lessthan" -> Criteria.where(field).lt(Date.from(val));
+                        case "dateafter" -> Criteria.where(field).gte(Date.from(val));
+                        case "equalsyear" -> {
+                            ZonedDateTime start = val.atZone(ZoneOffset.UTC).withDayOfYear(1).truncatedTo(ChronoUnit.DAYS);
+                            ZonedDateTime end = start.plusYears(1);
+                            yield Criteria.where(field)
+                                    .gte(Date.from(start.toInstant()))
+                                    .lt(Date.from(end.toInstant()));
+                        }
+                        default -> throw new IllegalArgumentException("Opérateur non supporté pour Instant : " + operator);
+                    };
+                } else {
+                    throw new IllegalArgumentException("Aucune valeur détectée dans ValueType.");
                 }
-
-                // Combinaison des deux critères principaux et secondaires avec AND logique
-                mainCriteria = new Criteria().andOperator(mainCriteria, filterCriteria);
-
-            } else if (filterField != null || filterValue != null || filterOperator != null) {
-                // Vérifie que les 3 éléments du filtre secondaire sont bien fournis ensemble
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "filterField, filterValue et filterOperator doivent tous être spécifiés");
+                criteriaList.add(criteria);
             }
 
-            // Requête Mongo avec le critère final combiné (filtrage)
-            return getFilteredResults(mongoTemplate, collection, field, mainCriteria);
-
-        } catch (ResponseStatusException e) {
-            // Lève les erreurs HTTP prévues (400, etc.)
-            throw e;
+            Query query = new Query(new Criteria().andOperator(criteriaList.toArray(new Criteria[0])));
+            List<Map> results = mongoTemplate.find(query, Map.class, collection);
+            return ResponseEntity.ok(results);
+        } catch (NoSuchFieldException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Champ invalide : " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Collection, champ ou valeur invalide : " + e.getMessage());
         } catch (Exception e) {
-            // Gestion des erreurs inattendues (ex : erreurs de parsing, connexion Mongo, etc.)
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur interne : " + e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Erreur lors du filtrage des données : " + e.getMessage());
         }
     }
 
@@ -340,7 +297,20 @@ public class MongoDatabaseController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Valeur invalide pour le type du champ : " + value);
         }
     }
-
-
-
+    @GetMapping("/{databaseName}/{collection}/field-values/{field}")
+    public ResponseEntity<List<Object>> getFieldValues(
+            @PathVariable String databaseName,
+            @PathVariable String collection,
+            @PathVariable String field) {
+        try {
+            MongoTemplate mongoTemplate = mongoDataBaseConfig.getMongoTemplateForDatabase(databaseName);
+            // Use findDistinct with Query to retrieve distinct values
+            Query query = new Query();
+            List<Object> values = mongoTemplate.findDistinct(query, field, collection, Object.class);
+            return ResponseEntity.ok(values.stream().filter(Objects::nonNull).toList());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Erreur lors de la récupération des valeurs du champ : " + e.getMessage());
+        }
+    }
 }
